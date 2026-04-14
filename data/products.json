@@ -1,0 +1,100 @@
+[
+  {
+    "name": "BrandTracking Platform",
+    "division": "Analytics",
+    "description": "Continuous brand health tracking study measuring brand awareness, consideration, and preference across target markets for FMCG and media clients",
+    "arr": 4200000,
+    "dependent_applications": ["SurveyEngine", "PanelIQ", "InsightHub", "CoreDataWarehouse"]
+  },
+  {
+    "name": "CustomerSatisfaction Suite",
+    "division": "Analytics",
+    "description": "Customer satisfaction and loyalty measurement programme combining transactional surveys, NPS tracking, and driver analysis for retail and financial services clients",
+    "arr": 3800000,
+    "dependent_applications": ["SurveyEngine", "WebCollect", "ReportFactory", "CoreDataWarehouse"]
+  },
+  {
+    "name": "MediaMeasurement",
+    "division": "Analytics",
+    "description": "Cross-media audience measurement service tracking TV, digital, and print consumption via diary-based panels for media owners and advertising clients",
+    "arr": 5100000,
+    "dependent_applications": ["DiaryTracker", "DataMapper", "InsightHub", "CoreDataWarehouse"]
+  },
+  {
+    "name": "AudienceAnalytics",
+    "division": "Analytics",
+    "description": "Audience profiling and segmentation service delivering detailed demographic and behavioural insights to support media planning and targeting strategies",
+    "arr": 2900000,
+    "dependent_applications": ["SegmentBuilder", "PanelIQ", "InsightHub", "CoreDataWarehouse"]
+  },
+  {
+    "name": "FieldworkServices",
+    "division": "Data Collection",
+    "description": "Managed fieldwork execution service providing face-to-face and telephone interviewing capabilities for clients requiring primary data collection at scale",
+    "arr": 1600000,
+    "dependent_applications": ["FieldOps", "QuotaManager", "SampleRouter", "CallCentre Suite"]
+  },
+  {
+    "name": "ConsumerPanel",
+    "division": "Data Collection",
+    "description": "Syndicated consumer panel providing continuous purchase and behaviour tracking data across grocery, health, and personal care categories",
+    "arr": 3400000,
+    "dependent_applications": ["PanelIQ", "WebCollect", "DataMapper", "SampleRouter"]
+  },
+  {
+    "name": "CompetitiveIntelligence",
+    "division": "Analytics",
+    "description": "Competitive benchmarking and market share tracking service combining survey data and panel insights to monitor brand and product performance relative to competitors",
+    "arr": 2200000,
+    "dependent_applications": ["DataMapper", "InsightHub", "CoreDataWarehouse"]
+  },
+  {
+    "name": "PublicAffairsResearch",
+    "division": "Client Services",
+    "description": "Custom opinion research and public affairs polling service for government, NGO, and corporate clients requiring independent research for policy and communications",
+    "arr": 1100000,
+    "dependent_applications": ["SurveyEngine", "WebCollect", "ReportFactory"]
+  },
+  {
+    "name": "RetailInsights",
+    "division": "Analytics",
+    "description": "Retail performance analytics service combining shopper survey data with panel tracking to deliver category management and shopper marketing insights to FMCG and retail clients",
+    "arr": 4600000,
+    "dependent_applications": ["SurveyEngine", "SegmentBuilder", "InsightHub", "CoreDataWarehouse"]
+  },
+  {
+    "name": "HealthcareResearch",
+    "division": "Analytics",
+    "description": "Healthcare and pharmaceutical research service providing patient experience surveys, HCP attitude tracking, and treatment pathway research for pharma and health system clients",
+    "arr": 2700000,
+    "dependent_applications": ["SurveyEngine", "PanelIQ", "ClientPortal", "CoreDataWarehouse"]
+  },
+  {
+    "name": "TechnologyAdoption",
+    "division": "Analytics",
+    "description": "Technology adoption and digital transformation research service tracking enterprise software adoption, IT decision-maker attitudes, and digital investment priorities for technology vendors",
+    "arr": 3300000,
+    "dependent_applications": ["SurveyEngine", "WebCollect", "DataMapper", "AuthService"]
+  },
+  {
+    "name": "LongitudinalStudies",
+    "division": "Data Collection",
+    "description": "Long-form longitudinal panel research service supporting multi-year cohort studies tracking life stage transitions, behaviour change, and attitudinal shifts",
+    "arr": 1800000,
+    "dependent_applications": ["DiaryTracker", "DataMapper", "CoreDataWarehouse"]
+  },
+  {
+    "name": "DataLicensing",
+    "division": "Platform Engineering",
+    "description": "Syndicated data licensing platform providing programmatic access to Pragmenta Insights' panel data, survey databases, and audience segment taxonomies via API for data science and analytics clients",
+    "arr": 6200000,
+    "dependent_applications": ["CoreDataWarehouse", "APIGateway", "ClientPortal"]
+  },
+  {
+    "name": "CorporateReporting",
+    "division": "Client Services",
+    "description": "Corporate reputation and ESG perception research service delivering annual stakeholder surveys, media analysis, and reputation benchmarking reports for corporate communications teams",
+    "arr": 900000,
+    "dependent_applications": ["ReportFactory", "DeliveryTracker", "ClientPortal"]
+  }
+]

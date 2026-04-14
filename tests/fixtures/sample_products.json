@@ -1,0 +1,23 @@
+[
+  {
+    "name": "TechnologyAdoption",
+    "division": "Analytics",
+    "description": "Technology adoption research service tracking enterprise software adoption and IT decision-maker attitudes",
+    "arr": 3300000,
+    "dependent_applications": ["CallCentre Suite", "AuthService"]
+  },
+  {
+    "name": "CompetitiveIntelligence",
+    "division": "Analytics",
+    "description": "Competitive benchmarking and market share tracking service",
+    "arr": 2200000,
+    "dependent_applications": ["InsightHub", "CoreDataWarehouse"]
+  },
+  {
+    "name": "CorporateReporting",
+    "division": "Client Services",
+    "description": "Corporate reputation and ESG perception research service",
+    "arr": 900000,
+    "dependent_applications": ["InsightHub"]
+  }
+]
