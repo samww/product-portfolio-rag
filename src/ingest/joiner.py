@@ -18,6 +18,23 @@ class EnrichedProduct:
     revenue_at_risk: int
 
 
+def _transitive_apps(
+    start_names: list[str],
+    app_by_name: dict[str, Application],
+) -> list[Application]:
+    """Return all applications reachable via the dependency graph (BFS)."""
+    seen: dict[str, Application] = {}
+    queue = list(start_names)
+    while queue:
+        name = queue.pop()
+        if name in seen or name not in app_by_name:
+            continue
+        app = app_by_name[name]
+        seen[name] = app
+        queue.extend(app.dependencies)
+    return list(seen.values())
+
+
 def enrich_products(
     products: list[Product],
     applications: list[Application],
@@ -25,19 +42,21 @@ def enrich_products(
     app_by_name = {a.name: a for a in applications}
     result = []
     for product in products:
-        dep_apps = [app_by_name[n] for n in product.dependent_applications if n in app_by_name]
+        direct_apps = [app_by_name[n] for n in product.dependent_applications if n in app_by_name]
+        all_apps = _transitive_apps(product.dependent_applications, app_by_name)
 
-        total_app_cost = sum(a.annual_cost_total for a in dep_apps)
+        # Cost metrics use direct deps only to avoid double-counting shared infrastructure
+        total_app_cost = sum(a.annual_cost_total for a in direct_apps)
         roi_ratio = product.arr / total_app_cost if total_app_cost else 0.0
 
+        # Risk metrics use the full transitive closure
         highest_risk = max(
-            (a.risk_rating for a in dep_apps),
+            (a.risk_rating for a in all_apps),
             key=lambda r: _RISK_ORDER.get(r, 0),
             default="Unknown",
         )
-
-        apps_at_risk = [a.name for a in dep_apps if _RISK_ORDER.get(a.risk_rating, 0) >= 3]
-        apps_end_of_life = [a.name for a in dep_apps if "end-of-life" in a.status.lower()]
+        apps_at_risk = [a.name for a in all_apps if _RISK_ORDER.get(a.risk_rating, 0) >= 3]
+        apps_end_of_life = [a.name for a in all_apps if "end-of-life" in a.status.lower()]
 
         is_at_risk = bool(apps_at_risk or apps_end_of_life)
         revenue_at_risk = product.arr if is_at_risk else 0

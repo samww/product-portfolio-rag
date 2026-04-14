@@ -4,13 +4,25 @@ from src.ingest.loader import Application
 from src.ingest.joiner import EnrichedProduct
 
 
+def _app_flags(app: Application) -> str:
+    flags = []
+    if not app.owner.strip():
+        flags.append("No named owner")
+    if "end-of-life" in app.status.lower():
+        flags.append("End of life")
+    if app.risk_rating in ("Critical", "High"):
+        flags.append(f"{app.risk_rating} risk")
+    return ", ".join(flags) if flags else "None"
+
+
 def chunk_application(app: Application) -> str:
     return (
         f"Application: {app.name}\n"
+        f"Flags: {_app_flags(app)}\n"
         f"Division: {app.division}\n"
         f"Business Capability: {app.business_capability}\n"
         f"Technology: {app.technology_stack}\n"
-        f"Owner: {app.owner}\n"
+        f"Owner: {app.owner or 'No named owner'}\n"
         f"Risk: {app.risk_rating}\n"
         f"Status: {app.status}\n"
         f"Annual Cost: {app.annual_cost_total}\n"

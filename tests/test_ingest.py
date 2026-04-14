@@ -107,12 +107,18 @@ def test_enrich_products_revenue_at_risk_when_at_risk(sample_apps_path, sample_p
     assert tech.revenue_at_risk == 3_300_000
 
 
-def test_enrich_products_revenue_at_risk_zero_when_safe(sample_apps_path, sample_products_path):
-    apps = load_applications(sample_apps_path)
-    products = load_products(sample_products_path)
-    enriched = enrich_products(products, apps)
-    corp = next(e for e in enriched if e.product.name == "CorporateReporting")
-    assert corp.revenue_at_risk == 0
+def test_enrich_products_revenue_at_risk_zero_when_safe():
+    # Construct a product whose entire transitive dep chain is Low risk / Active
+    safe_app = Application(
+        name="SafeApp", division="X", business_capability="X", technology_stack="X",
+        owner="X", risk_rating="Low", status="Active",
+        annual_cost_workforce=0, annual_cost_licenses=0, annual_cost_cloud=0,
+        annual_cost_total=100_000, dependencies=[], dependents=[], notes="",
+    )
+    safe_product = Product(name="SafeProduct", division="X", description="X",
+                           arr=500_000, dependent_applications=["SafeApp"])
+    enriched = enrich_products([safe_product], [safe_app])
+    assert enriched[0].revenue_at_risk == 0
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +129,7 @@ def test_chunk_application_contains_all_labels(sample_apps_path):
     apps = load_applications(sample_apps_path)
     auth = next(a for a in apps if a.name == "AuthService")
     text = chunk_application(auth)
-    for label in ["Application:", "Division:", "Business Capability:", "Technology:",
+    for label in ["Application:", "Flags:", "Division:", "Business Capability:", "Technology:",
                   "Owner:", "Risk:", "Status:", "Annual Cost:", "Notes:"]:
         assert label in text, f"Missing label '{label}' in application chunk"
 
