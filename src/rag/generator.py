@@ -1,5 +1,6 @@
 """Generate a grounded answer from retrieved context using GPT-4o."""
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from openai import OpenAI
@@ -41,3 +42,25 @@ def generate_answer(
     )
     answer = completion.choices[0].message.content
     return GeneratedAnswer(answer=answer, sources=sources)
+
+
+def generate_answer_stream(
+    query: str,
+    retrieved_docs: list[RetrievedDoc],
+    openai_client: OpenAI,
+) -> Iterator[str]:
+    """Stream GPT-4o token deltas for the given query and retrieved context."""
+    context = "\n\n---\n\n".join(doc.document for doc in retrieved_docs)
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
+    ]
+    stream = openai_client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        stream=True,
+    )
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta

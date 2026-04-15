@@ -44,7 +44,7 @@ def retrieve(
     query: str,
     collection: chromadb.Collection,
     embed: Callable[[list[str]], list[list[float]]],
-    top_k: int = 5,
+    top_k: int = 8,
 ) -> list[RetrievedDoc]:
     """Embed query and return top_k applications + top_k products, sorted by distance."""
     query_embedding = embed([query])[0]

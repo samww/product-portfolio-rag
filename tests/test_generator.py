@@ -5,7 +5,7 @@ Run with: uv run pytest tests/test_generator.py -v
 
 from unittest.mock import MagicMock
 
-from src.rag.generator import generate_answer, GeneratedAnswer
+from src.rag.generator import generate_answer, generate_answer_stream, GeneratedAnswer
 from src.rag.retriever import RetrievedDoc
 
 
@@ -59,6 +59,29 @@ def test_generate_answer_sources_from_metadata():
 # ---------------------------------------------------------------------------
 # Cycle 6: generate_answer includes the system prompt in the OpenAI call
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Cycle 10: generate_answer_stream yields token delta strings
+# ---------------------------------------------------------------------------
+
+def _stub_streaming_openai(tokens: list[str]):
+    """Return a mock OpenAI client whose streaming completion yields token chunks."""
+    def make_chunk(content):
+        chunk = MagicMock()
+        chunk.choices[0].delta.content = content
+        return chunk
+
+    client = MagicMock()
+    client.chat.completions.create.return_value = iter(make_chunk(t) for t in tokens)
+    return client
+
+
+def test_generate_answer_stream_yields_tokens():
+    client = _stub_streaming_openai(["Hello", " world", "!"])
+    docs = _make_docs("AuthService")
+    tokens = list(generate_answer_stream("test query", docs, client))
+    assert tokens == ["Hello", " world", "!"]
+
 
 def test_generate_answer_uses_system_prompt():
     from src.rag.prompts import SYSTEM_PROMPT
