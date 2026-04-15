@@ -170,6 +170,20 @@ def test_chunk_product_contains_field_values(sample_apps_path, sample_products_p
 
 
 # ---------------------------------------------------------------------------
+# Cycle 9b: chunker sets "No named owner" on Flags line for empty-owner apps
+# ---------------------------------------------------------------------------
+
+def test_chunk_application_no_named_owner_flag_when_owner_empty(sample_apps_path):
+    apps = load_applications(sample_apps_path)
+    forecast = next(a for a in apps if a.name == "ForecastTool")
+    text = chunk_application(forecast)
+    flags_line = next(line for line in text.splitlines() if line.startswith("Flags:"))
+    assert "No named owner" in flags_line, (
+        f"Expected 'No named owner' in Flags line, got: {flags_line!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Cycle 10: indexer stores documents with correct metadata fields
 # ---------------------------------------------------------------------------
 

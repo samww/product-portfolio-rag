@@ -11,8 +11,15 @@
     "annual_cost_licenses": 60000,
     "annual_cost_cloud": 90000,
     "annual_cost_total": 630000,
-    "dependencies": ["CoreDataWarehouse", "AuthService"],
-    "dependents": ["SurveyEngine", "SegmentBuilder"],
+    "dependencies": [
+      "CoreDataWarehouse",
+      "AuthService"
+    ],
+    "dependents": [
+      "SampleRouter",
+      "SegmentBuilder",
+      "SurveyEngine"
+    ],
     "notes": "Core panel platform underpinning most survey and audience products. Redis used for real-time quota tracking. Migrated to cloud-native architecture in 2022."
   },
   {
@@ -27,8 +34,15 @@
     "annual_cost_licenses": 45000,
     "annual_cost_cloud": 120000,
     "annual_cost_total": 725000,
-    "dependencies": ["PanelIQ", "CoreDataWarehouse", "AuthService"],
-    "dependents": ["WebCollect", "QuotaManager"],
+    "dependencies": [
+      "PanelIQ",
+      "CoreDataWarehouse",
+      "AuthService"
+    ],
+    "dependents": [
+      "WebCollect",
+      "QuotaManager"
+    ],
     "notes": "Highest-traffic backend service. Handles ~2M survey responses per month. Celery workers process async distribution jobs."
   },
   {
@@ -43,7 +57,11 @@
     "annual_cost_licenses": 35000,
     "annual_cost_cloud": 75000,
     "annual_cost_total": 530000,
-    "dependencies": ["CoreDataWarehouse", "AuthService", "APIGateway"],
+    "dependencies": [
+      "CoreDataWarehouse",
+      "AuthService",
+      "APIGateway"
+    ],
     "dependents": [],
     "notes": "Primary client-facing product. React SPA with Node BFF. Most active development team in Platform Engineering. Performance well within SLA."
   },
@@ -59,8 +77,13 @@
     "annual_cost_licenses": 40000,
     "annual_cost_cloud": 95000,
     "annual_cost_total": 525000,
-    "dependencies": ["CoreDataWarehouse"],
-    "dependents": ["InsightHub"],
+    "dependencies": [
+      "CoreDataWarehouse"
+    ],
+    "dependents": [
+      "InsightHub",
+      "ReportFactory"
+    ],
     "notes": "Airflow DAGs run nightly and on-demand. dbt models documented in the DevPortal. Handles schema evolution from legacy survey formats."
   },
   {
@@ -75,8 +98,13 @@
     "annual_cost_licenses": 20000,
     "annual_cost_cloud": 45000,
     "annual_cost_total": 345000,
-    "dependencies": ["SurveyEngine", "CoreDataWarehouse"],
-    "dependents": ["FieldOps"],
+    "dependencies": [
+      "SurveyEngine",
+      "CoreDataWarehouse"
+    ],
+    "dependents": [
+      "FieldOps"
+    ],
     "notes": "Real-time quota enforcement via Redis pub/sub. Integrated into SurveyEngine routing logic to close cells when targets are met."
   },
   {
@@ -91,7 +119,10 @@
     "annual_cost_licenses": 30000,
     "annual_cost_cloud": 65000,
     "annual_cost_total": 445000,
-    "dependencies": ["PanelIQ", "CoreDataWarehouse"],
+    "dependencies": [
+      "PanelIQ",
+      "CoreDataWarehouse"
+    ],
     "dependents": [],
     "notes": "Used by research teams to define audience profiles for new studies. ML models retrained quarterly. Output feeds into PanelIQ targeting."
   },
@@ -107,7 +138,11 @@
     "annual_cost_licenses": 55000,
     "annual_cost_cloud": 80000,
     "annual_cost_total": 495000,
-    "dependencies": ["QuotaManager", "SampleRouter", "CoreDataWarehouse"],
+    "dependencies": [
+      "QuotaManager",
+      "SampleRouter",
+      "CoreDataWarehouse"
+    ],
     "dependents": [],
     "notes": "React Native app used by ~200 field interviewers. Offline-first with sync on reconnect. GPS tracking and assignment routing integrated."
   },
@@ -123,9 +158,11 @@
     "annual_cost_licenses": 280000,
     "annual_cost_cloud": 30000,
     "annual_cost_total": 610000,
-    "dependencies": ["SampleRouter"],
+    "dependencies": [
+      "SampleRouter"
+    ],
     "dependents": [],
-    "notes": "Legacy Java 8 monolith. Genesys PureConnect vendor contract expires December 2026 with no renewal path — vendor is discontinuing the product. High license cost driven by per-seat telephony licensing. No replacement plan formalised. Replacement with a cloud telephony solution (e.g. Amazon Connect) is under discussion but not funded."
+    "notes": "Legacy Java 8 monolith. Genesys PureConnect vendor contract expires December 2026 with no renewal path \u00e2\u20ac\u201d vendor is discontinuing the product. High license cost driven by per-seat telephony licensing. No replacement plan formalised. Replacement with a cloud telephony solution (e.g. Amazon Connect) is under discussion but not funded."
   },
   {
     "name": "WebCollect",
@@ -139,7 +176,10 @@
     "annual_cost_licenses": 25000,
     "annual_cost_cloud": 70000,
     "annual_cost_total": 405000,
-    "dependencies": ["SurveyEngine", "AuthService"],
+    "dependencies": [
+      "SurveyEngine",
+      "AuthService"
+    ],
     "dependents": [],
     "notes": "High-availability respondent-facing service. Handles peak loads during panel waves. CDN-fronted for global respondent access."
   },
@@ -155,7 +195,10 @@
     "annual_cost_licenses": 40000,
     "annual_cost_cloud": 85000,
     "annual_cost_total": 445000,
-    "dependencies": ["CoreDataWarehouse", "SampleRouter"],
+    "dependencies": [
+      "CoreDataWarehouse",
+      "SampleRouter"
+    ],
     "dependents": [],
     "notes": "Supports diary panels of up to 5,000 participants. Push notification scheduling via AWS SNS. Media consumption classification uses a rules engine updated quarterly."
   },
@@ -171,8 +214,15 @@
     "annual_cost_licenses": 22000,
     "annual_cost_cloud": 50000,
     "annual_cost_total": 362000,
-    "dependencies": ["PanelIQ", "CoreDataWarehouse"],
-    "dependents": ["FieldOps", "DiaryTracker", "CallCentre Suite"],
+    "dependencies": [
+      "PanelIQ",
+      "CoreDataWarehouse"
+    ],
+    "dependents": [
+      "FieldOps",
+      "DiaryTracker",
+      "CallCentre Suite"
+    ],
     "notes": "Critical routing layer used across all collection channels. Redis cache stores eligibility rules for sub-millisecond lookup. Deduplication logic runs daily batch and real-time on invite."
   },
   {
@@ -187,7 +237,11 @@
     "annual_cost_licenses": 30000,
     "annual_cost_cloud": 90000,
     "annual_cost_total": 500000,
-    "dependencies": ["ReportFactory", "AuthService", "APIGateway"],
+    "dependencies": [
+      "ReportFactory",
+      "AuthService",
+      "APIGateway"
+    ],
     "dependents": [],
     "notes": "Used by ~800 client users across 120 client organisations. SSO via AuthService. Report files served from S3 with pre-signed URLs."
   },
@@ -203,8 +257,13 @@
     "annual_cost_licenses": 12000,
     "annual_cost_cloud": 65000,
     "annual_cost_total": 417000,
-    "dependencies": ["CoreDataWarehouse", "DataMapper"],
-    "dependents": ["ClientPortal"],
+    "dependencies": [
+      "CoreDataWarehouse",
+      "DataMapper"
+    ],
+    "dependents": [
+      "ClientPortal"
+    ],
     "notes": "Migrated in 2024 from a legacy on-premise Java/Oracle stack to a cloud-native Python/FastAPI service. License costs fell from $180k to $12k (Oracle vendor contract eliminated). Cloud costs increased from $15k to $65k. Net annual saving: $118k. Status: Active. Previous system required manual intervention for ~30% of reports; new system is fully automated."
   },
   {
@@ -219,7 +278,9 @@
     "annual_cost_licenses": 25000,
     "annual_cost_cloud": 40000,
     "annual_cost_total": 325000,
-    "dependencies": ["CoreDataWarehouse"],
+    "dependencies": [
+      "CoreDataWarehouse"
+    ],
     "dependents": [],
     "notes": "Used by project managers and client services teams. Integrated with Jira for engineering task tracking. Milestone notifications sent via email."
   },
@@ -235,7 +296,9 @@
     "annual_cost_licenses": 20000,
     "annual_cost_cloud": 35000,
     "annual_cost_total": 275000,
-    "dependencies": ["AuthService"],
+    "dependencies": [
+      "AuthService"
+    ],
     "dependents": [],
     "notes": "Web form intake system with approval workflow. Integrates with Salesforce CRM via webhook for opportunity tracking. New brief notification to Slack."
   },
@@ -251,7 +314,9 @@
     "annual_cost_licenses": 28000,
     "annual_cost_cloud": 45000,
     "annual_cost_total": 253000,
-    "dependencies": ["AuthService"],
+    "dependencies": [
+      "AuthService"
+    ],
     "dependents": [],
     "notes": "No named owner since the previous team lead departed in Q3 2024. Documents stored in S3 with PostgreSQL index. No SLA defined. Compliance team has flagged this for governance review."
   },
@@ -267,9 +332,26 @@
     "annual_cost_licenses": 120000,
     "annual_cost_cloud": 430000,
     "annual_cost_total": 1200000,
-    "dependencies": ["AuthService"],
-    "dependents": ["PanelIQ", "SurveyEngine", "InsightHub", "DataMapper", "QuotaManager", "SegmentBuilder", "FieldOps", "DiaryTracker", "SampleRouter", "ReportFactory", "DeliveryTracker"],
-    "notes": "Highest-cost application in the estate. Shared by 9 of 14 products. Runtime dependency on AuthService for internal service-to-service authentication — if AuthService fails, CoreDataWarehouse write operations are blocked. RDS Multi-AZ with read replicas. dbt runs nightly transformation jobs. 99.9% uptime SLA."
+    "dependencies": [
+      "AuthService"
+    ],
+    "dependents": [
+      "BillingEngine",
+      "CostTracker",
+      "DataMapper",
+      "DeliveryTracker",
+      "DiaryTracker",
+      "FieldOps",
+      "InsightHub",
+      "PanelIQ",
+      "QuotaManager",
+      "ReportFactory",
+      "SampleRouter",
+      "SegmentBuilder",
+      "SurveyEngine",
+      "WorkforceModel"
+    ],
+    "notes": "Highest-cost application in the estate. Shared by 9 of 14 products. Runtime dependency on AuthService for internal service-to-service authentication \u00e2\u20ac\u201d if AuthService fails, CoreDataWarehouse write operations are blocked. RDS Multi-AZ with read replicas. dbt runs nightly transformation jobs. 99.9% uptime SLA."
   },
   {
     "name": "APIGateway",
@@ -284,7 +366,10 @@
     "annual_cost_cloud": 60000,
     "annual_cost_total": 435000,
     "dependencies": [],
-    "dependents": ["InsightHub", "ClientPortal"],
+    "dependents": [
+      "InsightHub",
+      "ClientPortal"
+    ],
     "notes": "Kong Gateway on Kubernetes. Manages traffic for ~30 internal services. API key management and OAuth token validation at gateway layer."
   },
   {
@@ -300,8 +385,24 @@
     "annual_cost_cloud": 55000,
     "annual_cost_total": 665000,
     "dependencies": [],
-    "dependents": ["PanelIQ", "SurveyEngine", "InsightHub", "WebCollect", "ClientPortal", "ContractVault", "BriefManager", "CoreDataWarehouse"],
-    "notes": "Critical risk: Okta enterprise contract ends Q2 2026 with no renewal agreed — Okta has discontinued the legacy on-premise integration tier. Java 11 is out of extended support. No replacement identity provider has been selected. Dependency footprint is the largest in the estate — 8 direct dependents plus CoreDataWarehouse runtime dependency means failure propagates platform-wide. Engineering Operations has flagged this as the highest-priority infrastructure risk."
+    "dependents": [
+      "BillingEngine",
+      "BriefManager",
+      "ClientPortal",
+      "ContractVault",
+      "CoreDataWarehouse",
+      "InsightHub",
+      "LearningPortal",
+      "OffboardingFlow",
+      "OnboardingFlow",
+      "OrgDesigner",
+      "PanelIQ",
+      "ProcurementHub",
+      "SurveyEngine",
+      "WebCollect",
+      "WorkforceModel"
+    ],
+    "notes": "Critical risk: Okta enterprise contract ends Q2 2026 with no renewal agreed \u00e2\u20ac\u201d Okta has discontinued the legacy on-premise integration tier. Java 11 is out of extended support. No replacement identity provider has been selected. Dependency footprint is the largest in the estate \u00e2\u20ac\u201d 8 direct dependents plus CoreDataWarehouse runtime dependency means failure propagates platform-wide. Engineering Operations has flagged this as the highest-priority infrastructure risk."
   },
   {
     "name": "ObservabilityStack",
@@ -347,7 +448,10 @@
     "annual_cost_licenses": 75000,
     "annual_cost_cloud": 50000,
     "annual_cost_total": 465000,
-    "dependencies": ["CoreDataWarehouse", "AuthService"],
+    "dependencies": [
+      "CoreDataWarehouse",
+      "AuthService"
+    ],
     "dependents": [],
     "notes": "Integrates with Sage Intacct for general ledger posting. Monthly billing run processes ~$15m in client invoices. Change-controlled: all deployments require Finance sign-off."
   },
@@ -363,7 +467,9 @@
     "annual_cost_licenses": 65000,
     "annual_cost_cloud": 35000,
     "annual_cost_total": 300000,
-    "dependencies": ["CoreDataWarehouse"],
+    "dependencies": [
+      "CoreDataWarehouse"
+    ],
     "dependents": [],
     "notes": "Power BI dashboards published to Finance team. Power Query transformations pull from CoreDataWarehouse and AWS Cost Explorer API. Monthly refresh cycle."
   },
@@ -381,7 +487,7 @@
     "annual_cost_total": 175000,
     "dependencies": [],
     "dependents": [],
-    "notes": "Excel-based model with no named owner since the Finance Business Partner who maintained it left in Q1 2025. No documentation, no version control, no test coverage. Used in the annual planning process — Finance leadership depends on it for board-level submissions. High risk: a formula error would not be detected until the planning cycle is complete."
+    "notes": "Excel-based model with no named owner since the Finance Business Partner who maintained it left in Q1 2025. No documentation, no version control, no test coverage. Used in the annual planning process \u00e2\u20ac\u201d Finance leadership depends on it for board-level submissions. High risk: a formula error would not be detected until the planning cycle is complete."
   },
   {
     "name": "ProcurementHub",
@@ -395,9 +501,11 @@
     "annual_cost_licenses": 22000,
     "annual_cost_cloud": 30000,
     "annual_cost_total": 252000,
-    "dependencies": ["AuthService"],
+    "dependencies": [
+      "AuthService"
+    ],
     "dependents": [],
-    "notes": "Used by procurement and vendor management teams. Contract renewal alerts sent 90 days before expiry. Ironic note: the Okta contract renewal flag for AuthService was visible in ProcurementHub — the risk was known but not acted on."
+    "notes": "Used by procurement and vendor management teams. Contract renewal alerts sent 90 days before expiry. Ironic note: the Okta contract renewal flag for AuthService was visible in ProcurementHub \u00e2\u20ac\u201d the risk was known but not acted on."
   },
   {
     "name": "WorkforceModel",
@@ -411,8 +519,13 @@
     "annual_cost_licenses": 30000,
     "annual_cost_cloud": 45000,
     "annual_cost_total": 325000,
-    "dependencies": ["AuthService", "CoreDataWarehouse"],
-    "dependents": [],
+    "dependencies": [
+      "AuthService",
+      "CoreDataWarehouse"
+    ],
+    "dependents": [
+      "OrgDesigner"
+    ],
     "notes": "Azure-hosted. Used in annual headcount planning and monthly budget reviews. Azure App Service auto-scales during planning season."
   },
   {
@@ -427,7 +540,9 @@
     "annual_cost_licenses": 45000,
     "annual_cost_cloud": 35000,
     "annual_cost_total": 300000,
-    "dependencies": ["AuthService"],
+    "dependencies": [
+      "AuthService"
+    ],
     "dependents": [],
     "notes": "Hosts ~200 courses including mandatory compliance training. Completion data feeds into the annual performance review process. SSO via AuthService."
   },
@@ -443,7 +558,10 @@
     "annual_cost_licenses": 20000,
     "annual_cost_cloud": 25000,
     "annual_cost_total": 225000,
-    "dependencies": ["AuthService", "WorkforceModel"],
+    "dependencies": [
+      "AuthService",
+      "WorkforceModel"
+    ],
     "dependents": [],
     "notes": "Used by HR leadership and divisional heads during restructuring planning. Read-only access available to all managers. Data sourced from WorkforceModel."
   },
@@ -459,7 +577,9 @@
     "annual_cost_licenses": 30000,
     "annual_cost_cloud": 30000,
     "annual_cost_total": 260000,
-    "dependencies": ["AuthService"],
+    "dependencies": [
+      "AuthService"
+    ],
     "dependents": [],
     "notes": "Integrated with Workday HRIS for new joiner data. Automates IT provisioning requests, system access, and first-day logistics. Processes ~150 new joiners annually."
   },
@@ -475,8 +595,10 @@
     "annual_cost_licenses": 25000,
     "annual_cost_cloud": 25000,
     "annual_cost_total": 230000,
-    "dependencies": ["AuthService"],
+    "dependencies": [
+      "AuthService"
+    ],
     "dependents": [],
-    "notes": "No named owner since the previous HR Systems lead left in Q4 2024. Security risk: access revocation SLA is undefined. An audit in Q1 2025 found 3 former employees still had active system accounts — attributed to OffboardingFlow tasks not being completed. Flagged by Security team for immediate remediation."
+    "notes": "No named owner since the previous HR Systems lead left in Q4 2024. Security risk: access revocation SLA is undefined. An audit in Q1 2025 found 3 former employees still had active system accounts \u00e2\u20ac\u201d attributed to OffboardingFlow tasks not being completed. Flagged by Security team for immediate remediation."
   }
 ]
