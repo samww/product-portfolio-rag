@@ -3,6 +3,11 @@
 from pydantic import BaseModel
 
 
+class ProductExposure(BaseModel):
+    product: str
+    arr_000s: int
+
+
 class RiskFinding(BaseModel):
     application: str
     risk_rating: str
@@ -10,6 +15,7 @@ class RiskFinding(BaseModel):
     revenue_at_risk_000s: int
     recommended_action: str
     priority: str
+    product_exposures: list[ProductExposure] = []
 
 
 class GovernanceGap(BaseModel):

@@ -71,3 +71,29 @@ def enrich_products(
             revenue_at_risk=revenue_at_risk,
         ))
     return result
+
+
+def compute_app_product_exposures(
+    enriched_products: list[EnrichedProduct],
+) -> dict[str, list[tuple[str, int]]]:
+    """Return per-app list of (product_name, arr_000s) sorted by descending ARR."""
+    exposures: dict[str, list[tuple[str, int]]] = {}
+    for ep in enriched_products:
+        if ep.revenue_at_risk > 0:
+            for app_name in ep.apps_at_risk:
+                exposures.setdefault(app_name, []).append(
+                    (ep.product.name, ep.revenue_at_risk // 1000)
+                )
+    for app_name in exposures:
+        exposures[app_name].sort(key=lambda x: x[1], reverse=True)
+    return exposures
+
+
+def compute_app_arr_at_risk(enriched_products: list[EnrichedProduct]) -> dict[str, int]:
+    """Return total ARR at risk per application, summed across all products that carry the app in apps_at_risk."""
+    arr_by_app: dict[str, int] = {}
+    for ep in enriched_products:
+        if ep.revenue_at_risk > 0:
+            for app_name in ep.apps_at_risk:
+                arr_by_app[app_name] = arr_by_app.get(app_name, 0) + ep.revenue_at_risk
+    return arr_by_app

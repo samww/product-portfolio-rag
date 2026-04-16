@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from src.api.models import QueryRequest, QueryResponse
 from src.rag.generator import generate_answer, generate_answer_stream, generate_summary
-from src.rag.models import SummaryReport
+from src.rag.models import ProductExposure, SummaryReport
 from src.rag.retriever import retrieve, retrieve_at_risk_docs
 
 router = APIRouter()
@@ -35,7 +35,15 @@ async def query(body: QueryRequest, request: Request):
 async def summarise(request: Request):
     docs = retrieve_at_risk_docs(request.app.state.collection)
     report = generate_summary(docs, request.app.state.openai_client)
-    return report
+    exposures: dict[str, list[tuple[str, int]]] = request.app.state.app_product_exposures
+    enriched_risks = [
+        risk.model_copy(update={"product_exposures": [
+            ProductExposure(product=name, arr_000s=arr)
+            for name, arr in exposures.get(risk.application, [])
+        ]})
+        for risk in report.critical_risks
+    ]
+    return report.model_copy(update={"critical_risks": enriched_risks})
 
 
 @router.get("/query/stream")

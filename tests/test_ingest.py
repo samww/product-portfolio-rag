@@ -6,7 +6,7 @@ Run with: uv run pytest tests/test_ingest.py -v
 from pathlib import Path
 
 from src.ingest.loader import load_applications, load_products, Application, Product
-from src.ingest.joiner import enrich_products, EnrichedProduct
+from src.ingest.joiner import enrich_products, compute_app_arr_at_risk, compute_app_product_exposures, EnrichedProduct
 from src.ingest.chunker import chunk_application, chunk_product
 from src.ingest.indexer import index_documents
 
@@ -122,6 +122,57 @@ def test_enrich_products_revenue_at_risk_zero_when_safe():
 
 
 # ---------------------------------------------------------------------------
+# Cycle 7b: joiner computes arr_at_risk per application
+# ---------------------------------------------------------------------------
+# AuthService is in apps_at_risk for TechnologyAdoption (3.3M), CompetitiveIntelligence (2.2M),
+# CorporateReporting (0.9M) => 6,400,000
+# CallCentre Suite is in apps_at_risk for TechnologyAdoption (3.3M) => 3,300,000
+# ForecastTool has no product dependents => 0
+
+def test_compute_app_arr_at_risk_sums_across_products(sample_apps_path, sample_products_path):
+    apps = load_applications(sample_apps_path)
+    products = load_products(sample_products_path)
+    enriched = enrich_products(products, apps)
+    arr_by_app = compute_app_arr_at_risk(enriched)
+    assert arr_by_app.get("AuthService") == 6_400_000
+    assert arr_by_app.get("CallCentre Suite") == 3_300_000
+
+
+def test_compute_app_arr_at_risk_zero_for_no_dependents(sample_apps_path, sample_products_path):
+    apps = load_applications(sample_apps_path)
+    products = load_products(sample_products_path)
+    enriched = enrich_products(products, apps)
+    arr_by_app = compute_app_arr_at_risk(enriched)
+    assert arr_by_app.get("ForecastTool", 0) == 0
+
+
+# ---------------------------------------------------------------------------
+# Cycle 7c: joiner computes product exposure breakdown per application
+# ---------------------------------------------------------------------------
+# AuthService: TechnologyAdoption (3300k), CompetitiveIntelligence (2200k), CorporateReporting (900k)
+#   => sorted descending: [TechnologyAdoption, CompetitiveIntelligence, CorporateReporting]
+# CallCentre Suite: TechnologyAdoption (3300k) only
+
+def test_compute_app_product_exposures_order_and_values(sample_apps_path, sample_products_path):
+    apps = load_applications(sample_apps_path)
+    products = load_products(sample_products_path)
+    enriched = enrich_products(products, apps)
+    exposures = compute_app_product_exposures(enriched)
+    auth_exposures = exposures.get("AuthService", [])
+    assert auth_exposures[0] == ("TechnologyAdoption", 3300)
+    assert auth_exposures[1] == ("CompetitiveIntelligence", 2200)
+    assert auth_exposures[2] == ("CorporateReporting", 900)
+
+
+def test_compute_app_product_exposures_absent_for_no_dependents(sample_apps_path, sample_products_path):
+    apps = load_applications(sample_apps_path)
+    products = load_products(sample_products_path)
+    enriched = enrich_products(products, apps)
+    exposures = compute_app_product_exposures(enriched)
+    assert "ForecastTool" not in exposures
+
+
+# ---------------------------------------------------------------------------
 # Cycle 8: chunker formats application as labelled text block
 # ---------------------------------------------------------------------------
 
@@ -130,7 +181,7 @@ def test_chunk_application_contains_all_labels(sample_apps_path):
     auth = next(a for a in apps if a.name == "AuthService")
     text = chunk_application(auth)
     for label in ["Application:", "Flags:", "Division:", "Business Capability:", "Technology:",
-                  "Owner:", "Risk:", "Status:", "Annual Cost:", "Notes:"]:
+                  "Owner:", "Risk:", "Status:", "Annual Cost:", "ARR at Risk:", "Notes:"]:
         assert label in text, f"Missing label '{label}' in application chunk"
 
 

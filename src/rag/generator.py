@@ -5,9 +5,29 @@ from dataclasses import dataclass
 
 from openai import OpenAI
 
-from src.rag.models import SummaryReport
+from pydantic import BaseModel
+
+from src.rag.models import GovernanceGap, SummaryReport
 from src.rag.prompts import SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT
 from src.rag.retriever import RetrievedDoc
+
+
+class _RiskFindingLLM(BaseModel):
+    application: str
+    risk_rating: str
+    issue: str
+    revenue_at_risk_000s: int
+    recommended_action: str
+    priority: str
+
+
+class _SummaryReportLLM(BaseModel):
+    overall_health: str
+    executive_summary: str
+    critical_risks: list[_RiskFindingLLM]
+    governance_gaps: list[GovernanceGap]
+    total_apps_reviewed: int
+    total_arr_at_risk_000s: int
 
 
 @dataclass
@@ -57,9 +77,10 @@ def generate_summary(
             {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
             {"role": "user", "content": f"Portfolio data:\n{context}"},
         ],
-        response_format=SummaryReport,
+        response_format=_SummaryReportLLM,
     )
-    return SummaryReport(**completion.choices[0].message.parsed.model_dump())
+    parsed = completion.choices[0].message.parsed
+    return SummaryReport(**parsed.model_dump())
 
 
 def generate_answer_stream(

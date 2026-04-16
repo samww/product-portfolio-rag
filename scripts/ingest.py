@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.ingest.chunker import chunk_application, chunk_product
 from src.ingest.indexer import index_documents
-from src.ingest.joiner import enrich_products
+from src.ingest.joiner import enrich_products, compute_app_arr_at_risk
 from src.ingest.loader import load_applications, load_products
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -58,11 +58,12 @@ def main(reset: bool = False) -> None:
     apps = load_applications(DATA_DIR / "applications.json")
     products = load_products(DATA_DIR / "products.json")
     enriched = enrich_products(products, apps)
+    arr_at_risk_by_app = compute_app_arr_at_risk(enriched)
 
     docs, metadatas, ids = [], [], []
 
     for app in apps:
-        docs.append(chunk_application(app))
+        docs.append(chunk_application(app, arr_at_risk=arr_at_risk_by_app.get(app.name, 0)))
         metadatas.append({
             "doc_type": "application",
             "division": app.division,

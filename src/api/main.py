@@ -2,6 +2,7 @@
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import chromadb
 from dotenv import load_dotenv
@@ -9,6 +10,10 @@ from fastapi import FastAPI
 from openai import OpenAI
 
 from src.api.routes import router
+from src.ingest.joiner import compute_app_product_exposures, enrich_products
+from src.ingest.loader import load_applications, load_products
+
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 
 
 def _build_embed(openai_client: OpenAI):
@@ -27,9 +32,13 @@ async def lifespan(app: FastAPI):
     openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     chroma_client = chromadb.PersistentClient(path=".chroma")
     collection = chroma_client.get_or_create_collection("portfolio")
+    apps = load_applications(DATA_DIR / "applications.json")
+    products = load_products(DATA_DIR / "products.json")
+    enriched = enrich_products(products, apps)
     app.state.openai_client = openai_client
     app.state.collection = collection
     app.state.embed = _build_embed(openai_client)
+    app.state.app_product_exposures = compute_app_product_exposures(enriched)
     yield
 
 

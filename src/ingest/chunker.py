@@ -15,7 +15,7 @@ def _app_flags(app: Application) -> str:
     return ", ".join(flags) if flags else "None"
 
 
-def chunk_application(app: Application) -> str:
+def chunk_application(app: Application, arr_at_risk: int = 0) -> str:
     return (
         f"Application: {app.name}\n"
         f"Flags: {_app_flags(app)}\n"
@@ -26,6 +26,7 @@ def chunk_application(app: Application) -> str:
         f"Risk: {app.risk_rating}\n"
         f"Status: {app.status}\n"
         f"Annual Cost: {app.annual_cost_total}\n"
+        f"ARR at Risk: {arr_at_risk}\n"
         f"Dependencies: {', '.join(app.dependencies) if app.dependencies else 'None'}\n"
         f"Dependents: {', '.join(app.dependents) if app.dependents else 'None'}\n"
         f"Notes: {app.notes}"

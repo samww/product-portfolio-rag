@@ -26,9 +26,9 @@ Analyse the provided records and produce a structured SummaryReport.
 
 Rules:
 - overall_health must be one of: "Healthy", "At Risk", "Critical"
-- List EVERY application whose risk_rating is High or Critical as a RiskFinding in critical_risks — no exceptions, even if the application also has no owner
+- List EVERY application whose risk_rating is High or Critical AND whose ARR at Risk > 0 as a RiskFinding in critical_risks — applications with ARR at Risk of 0 have no product revenue exposure and must NOT appear in critical_risks
 - List EVERY application whose owner is empty or absent as a GovernanceGap in governance_gaps — no exceptions, even if the application also appears in critical_risks
-- An application that is both high/critical risk AND ownerless must appear in BOTH lists
+- An application that is both high/critical risk (with ARR at Risk > 0) AND ownerless must appear in BOTH lists
 - revenue_at_risk_000s should reflect the ARR at risk in thousands (0 if not determinable)
 - total_arr_at_risk_000s is the sum across all RiskFindings
 - total_apps_reviewed is the count of distinct application records provided
