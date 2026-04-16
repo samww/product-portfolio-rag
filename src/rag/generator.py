@@ -5,7 +5,8 @@ from dataclasses import dataclass
 
 from openai import OpenAI
 
-from src.rag.prompts import SYSTEM_PROMPT
+from src.rag.models import SummaryReport
+from src.rag.prompts import SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT
 from src.rag.retriever import RetrievedDoc
 
 
@@ -42,6 +43,23 @@ def generate_answer(
     )
     answer = completion.choices[0].message.content
     return GeneratedAnswer(answer=answer, sources=sources)
+
+
+def generate_summary(
+    retrieved_docs: list[RetrievedDoc],
+    openai_client: OpenAI,
+) -> SummaryReport:
+    """Call GPT-4o with structured output (response_format) to produce a SummaryReport."""
+    context = "\n\n---\n\n".join(doc.document for doc in retrieved_docs)
+    completion = openai_client.beta.chat.completions.parse(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
+            {"role": "user", "content": f"Portfolio data:\n{context}"},
+        ],
+        response_format=SummaryReport,
+    )
+    return SummaryReport(**completion.choices[0].message.parsed.model_dump())
 
 
 def generate_answer_stream(

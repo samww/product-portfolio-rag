@@ -40,6 +40,32 @@ def _query_where(
     ]
 
 
+def retrieve_at_risk_docs(collection: chromadb.Collection) -> list[RetrievedDoc]:
+    """Return all application docs with High/Critical risk OR empty owner, via metadata filter."""
+    high_critical = collection.get(
+        where={"$and": [
+            {"doc_type": {"$eq": "application"}},
+            {"risk_rating": {"$in": ["High", "Critical"]}},
+        ]},
+        include=["documents", "metadatas"],
+    )
+    no_owner = collection.get(
+        where={"$and": [
+            {"doc_type": {"$eq": "application"}},
+            {"owner": {"$eq": ""}},
+        ]},
+        include=["documents", "metadatas"],
+    )
+    seen_ids: set[str] = set()
+    results: list[RetrievedDoc] = []
+    for batch in (high_critical, no_owner):
+        for doc_id, doc, meta in zip(batch["ids"], batch["documents"], batch["metadatas"]):
+            if doc_id not in seen_ids:
+                seen_ids.add(doc_id)
+                results.append(RetrievedDoc(document=doc, metadata=meta, distance=0.0))
+    return results
+
+
 def retrieve(
     query: str,
     collection: chromadb.Collection,

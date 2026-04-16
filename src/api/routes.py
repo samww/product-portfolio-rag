@@ -6,8 +6,9 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from src.api.models import QueryRequest, QueryResponse
-from src.rag.generator import generate_answer, generate_answer_stream
-from src.rag.retriever import retrieve
+from src.rag.generator import generate_answer, generate_answer_stream, generate_summary
+from src.rag.models import SummaryReport
+from src.rag.retriever import retrieve, retrieve_at_risk_docs
 
 router = APIRouter()
 
@@ -28,6 +29,13 @@ async def query(body: QueryRequest, request: Request):
     )
     result = generate_answer(body.query, docs, request.app.state.openai_client)
     return QueryResponse(answer=result.answer, sources=result.sources, query=body.query)
+
+
+@router.post("/summarise", response_model=SummaryReport)
+async def summarise(request: Request):
+    docs = retrieve_at_risk_docs(request.app.state.collection)
+    report = generate_summary(docs, request.app.state.openai_client)
+    return report
 
 
 @router.get("/query/stream")

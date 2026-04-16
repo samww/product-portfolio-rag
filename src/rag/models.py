@@ -1,4 +1,4 @@
-"""Canonical structured output schemas used by the /summarise endpoint (Slice 6)."""
+"""Canonical structured output schemas used by the /summarise endpoint (Slice 5)."""
 
 from pydantic import BaseModel
 
@@ -6,18 +6,22 @@ from pydantic import BaseModel
 class RiskFinding(BaseModel):
     application: str
     risk_rating: str
-    status: str
-    affected_products: list[str]
-    revenue_at_risk: int
+    issue: str
+    revenue_at_risk_000s: int
+    recommended_action: str
+    priority: str
 
 
 class GovernanceGap(BaseModel):
     application: str
     issue: str
+    recommended_action: str
 
 
 class SummaryReport(BaseModel):
-    total_revenue_at_risk: int
-    risk_findings: list[RiskFinding]
+    overall_health: str
+    executive_summary: str
+    critical_risks: list[RiskFinding]
     governance_gaps: list[GovernanceGap]
-    narrative: str
+    total_apps_reviewed: int
+    total_arr_at_risk_000s: int

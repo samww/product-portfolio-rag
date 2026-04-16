@@ -3,7 +3,7 @@
 Run with: uv run pytest tests/test_retriever.py -v
 """
 
-from src.rag.retriever import retrieve, RetrievedDoc
+from src.rag.retriever import retrieve, retrieve_at_risk_docs, RetrievedDoc
 
 _APP_META = {"doc_type": "application", "division": "X", "risk_rating": "Low", "status": "Active", "owner": "X"}
 _PRODUCT_META = {"doc_type": "product", "division": "X", "risk_rating": "Low", "status": "Active", "owner": ""}
@@ -77,3 +77,72 @@ def test_retrieve_returns_both_doc_types(chroma_collection, stub_embed):
     results = retrieve("any query", chroma_collection, stub_embed, top_k=5)
     doc_types = {r.metadata["doc_type"] for r in results}
     assert doc_types == {"application", "product"}
+
+
+# ---------------------------------------------------------------------------
+# Cycle 5: retrieve_at_risk_docs returns High/Critical risk application docs
+# ---------------------------------------------------------------------------
+
+def test_retrieve_at_risk_docs_returns_high_critical_risk(chroma_collection, stub_embed):
+    docs = [
+        "Application: AuthService\nRisk: Critical",
+        "Application: ForecastTool\nRisk: High",
+        "Application: BillingApp\nRisk: Low",
+    ]
+    metadatas = [
+        {**_APP_META, "risk_rating": "Critical", "owner": "alice"},
+        {**_APP_META, "risk_rating": "High", "owner": "bob"},
+        {**_APP_META, "risk_rating": "Low", "owner": "carol"},
+    ]
+    chroma_collection.upsert(
+        documents=docs,
+        embeddings=stub_embed(docs),
+        metadatas=metadatas,
+        ids=["app-auth", "app-forecast", "app-billing"],
+    )
+    results = retrieve_at_risk_docs(chroma_collection)
+    names = [r.metadata.get("owner") for r in results]
+    assert "alice" in names
+    assert "bob" in names
+    assert "carol" not in names
+
+
+# ---------------------------------------------------------------------------
+# Cycle 6: retrieve_at_risk_docs includes apps with no owner (empty string)
+# ---------------------------------------------------------------------------
+
+def test_retrieve_at_risk_docs_includes_no_owner_apps(chroma_collection, stub_embed):
+    docs = [
+        "Application: ContractVault\nOwner: No named owner",
+        "Application: SafeApp\nRisk: Low",
+    ]
+    metadatas = [
+        {**_APP_META, "risk_rating": "Low", "owner": ""},
+        {**_APP_META, "risk_rating": "Low", "owner": "charlie"},
+    ]
+    chroma_collection.upsert(
+        documents=docs,
+        embeddings=stub_embed(docs),
+        metadatas=metadatas,
+        ids=["app-contract", "app-safe"],
+    )
+    results = retrieve_at_risk_docs(chroma_collection)
+    documents = [r.document for r in results]
+    assert any("ContractVault" in d for d in documents)
+    assert all("SafeApp" not in d for d in documents)
+
+
+# ---------------------------------------------------------------------------
+# Cycle 7: retrieve_at_risk_docs deduplicates a doc that matches both filters
+# ---------------------------------------------------------------------------
+
+def test_retrieve_at_risk_docs_deduplicates(chroma_collection, stub_embed):
+    doc = "Application: ForecastTool\nRisk: High"
+    chroma_collection.upsert(
+        documents=[doc],
+        embeddings=stub_embed([doc]),
+        metadatas=[{**_APP_META, "risk_rating": "High", "owner": ""}],
+        ids=["app-forecast"],
+    )
+    results = retrieve_at_risk_docs(chroma_collection)
+    assert len(results) == 1

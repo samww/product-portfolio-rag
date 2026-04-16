@@ -157,6 +157,85 @@ def test_stream_body_contains_token_events(chroma_collection, stub_embed):
 # Cycle 13: final [DONE] event contains JSON with sources, context, query
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Cycle 14: POST /summarise returns 200 with SummaryReport shape
+# ---------------------------------------------------------------------------
+
+_SUMMARY_REPORT = {
+    "overall_health": "Critical",
+    "executive_summary": "Two applications are at high risk.",
+    "critical_risks": [
+        {
+            "application": "AuthService",
+            "risk_rating": "Critical",
+            "issue": "Vendor EOL",
+            "revenue_at_risk_000s": 6200,
+            "recommended_action": "Migrate immediately",
+            "priority": "P1",
+        }
+    ],
+    "governance_gaps": [
+        {
+            "application": "ContractVault",
+            "issue": "No named owner",
+            "recommended_action": "Assign an owner",
+        }
+    ],
+    "total_apps_reviewed": 2,
+    "total_arr_at_risk_000s": 6200,
+}
+
+
+def _stub_summary_openai(report: dict):
+    from unittest.mock import MagicMock
+    parsed = MagicMock()
+    parsed.model_dump.return_value = report
+    choice = MagicMock()
+    choice.message.parsed = parsed
+    completion = MagicMock()
+    completion.choices = [choice]
+    client = MagicMock()
+    client.beta.chat.completions.parse.return_value = completion
+    return client
+
+
+def test_summarise_returns_200_with_summary_report_shape(chroma_collection, stub_embed):
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = chroma_collection
+    test_app.state.embed = stub_embed
+    test_app.state.openai_client = _stub_summary_openai(_SUMMARY_REPORT)
+    doc = "Application: AuthService\nRisk: Critical"
+    chroma_collection.upsert(
+        documents=[doc],
+        embeddings=stub_embed([doc]),
+        metadatas=[{"doc_type": "application", "division": "X",
+                    "risk_rating": "Critical", "status": "Active", "owner": "alice"}],
+        ids=["app-auth"],
+    )
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.post("/summarise")
+    assert response.status_code == 200
+    body = response.json()
+    assert "overall_health" in body
+    assert "executive_summary" in body
+    assert "critical_risks" in body
+    assert "governance_gaps" in body
+    assert "total_apps_reviewed" in body
+    assert "total_arr_at_risk_000s" in body
+
+
+def test_summarise_overall_health_is_valid_value(chroma_collection, stub_embed):
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = chroma_collection
+    test_app.state.embed = stub_embed
+    test_app.state.openai_client = _stub_summary_openai(_SUMMARY_REPORT)
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.post("/summarise")
+    assert response.json()["overall_health"] in ("Healthy", "At Risk", "Critical")
+
+
 def test_stream_done_event_contains_sources_context_query(chroma_collection, stub_embed):
     test_app = FastAPI()
     test_app.include_router(router)
