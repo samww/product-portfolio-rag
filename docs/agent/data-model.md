@@ -30,6 +30,7 @@ Stored as structured text in ChromaDB. ChromaDB metadata per doc: `doc_type="app
 | Annual Cost Total ($000s) | Sum of above three |
 | Dependencies | App names this depends on |
 | Dependents | App names that depend on this |
+| ARR at Risk ($000s) | Computed at ingestion: sum of ARR across all products that have this app in their transitive `apps_at_risk` list — embedded in the chunk as `ARR at Risk:` so the LLM can use it in `/summarise` output |
 | Notes | Operational context, known issues |
 
 ## Product schema
@@ -65,7 +66,7 @@ Intentionally designed into the data — these drive the demo queries and the `/
 
 **Centrepiece risk chain:** DataLicensing ($6.2m ARR) → CoreDataWarehouse → AuthService (Critical). Two-hop indirect dependency — only answerable because CoreDataWarehouse's Notes field documents its runtime dependency on AuthService.
 
-**Total ARR with direct High/Critical exposure: ~$11.1m.**
+**AuthService ARR at risk: $43,800k** (all 14 products depend on it transitively via CoreDataWarehouse or direct application dependencies). **CallCentre Suite ARR at risk: $1,600k** (FieldworkServices only). ForecastTool has $0 ARR at risk — no product dependents.
 
 ## See also
 
