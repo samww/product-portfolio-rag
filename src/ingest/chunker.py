@@ -32,6 +32,17 @@ def chunk_application(app: Application) -> str:
     )
 
 
+def _cost_assessment(enriched: EnrichedProduct) -> str:
+    p = enriched.product
+    if enriched.roi_ratio < 1.0:
+        shortfall = enriched.total_app_cost - p.arr
+        return (
+            f"Cost-negative: application costs (${enriched.total_app_cost:,}) exceed ARR (${p.arr:,}) "
+            f"by ${shortfall:,} — this product is loss-making on application costs alone"
+        )
+    return f"ARR exceeds application costs (ROI Ratio: {enriched.roi_ratio:.2f})"
+
+
 def chunk_product(enriched: EnrichedProduct) -> str:
     p = enriched.product
     return (
@@ -42,6 +53,7 @@ def chunk_product(enriched: EnrichedProduct) -> str:
         f"Dependent Applications: {', '.join(p.dependent_applications) if p.dependent_applications else 'None'}\n"
         f"Total App Cost: {enriched.total_app_cost}\n"
         f"ROI Ratio: {enriched.roi_ratio:.3f}\n"
+        f"Cost Assessment: {_cost_assessment(enriched)}\n"
         f"Highest Risk: {enriched.highest_risk}\n"
         f"Apps at Risk: {', '.join(enriched.apps_at_risk) if enriched.apps_at_risk else 'None'}\n"
         f"Apps End-of-Life: {', '.join(enriched.apps_end_of_life) if enriched.apps_end_of_life else 'None'}\n"

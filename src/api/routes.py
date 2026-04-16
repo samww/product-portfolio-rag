@@ -47,22 +47,26 @@ async def query_stream(query: str, top_k: int = 8, request: Request = None):
         top_k=top_k,
     )
 
-    sources = []
+    app_sources: list[str] = []
+    product_sources: list[str] = []
     for doc in docs:
         first_line = doc.document.split("\n")[0]
-        for prefix in ("Application: ", "Product: "):
-            if first_line.startswith(prefix):
-                sources.append(first_line[len(prefix):])
-                break
-        else:
-            sources.append(first_line)
+        if first_line.startswith("Application: "):
+            app_sources.append(first_line[len("Application: "):])
+        elif first_line.startswith("Product: "):
+            product_sources.append(first_line[len("Product: "):])
 
     context_texts = [doc.document for doc in docs]
 
     def event_stream():
         for token in generate_answer_stream(query, docs, request.app.state.openai_client):
-            yield f"data: {token}\n\n"
-        done_payload = json.dumps({"sources": sources, "context": context_texts, "query": query})
+            yield f"data: {json.dumps(token)}\n\n"
+        done_payload = json.dumps({
+            "app_sources": app_sources,
+            "product_sources": product_sources,
+            "context": context_texts,
+            "query": query,
+        })
         yield f"data: [DONE] {done_payload}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")

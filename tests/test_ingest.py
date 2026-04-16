@@ -154,7 +154,7 @@ def test_chunk_product_contains_all_labels(sample_apps_path, sample_products_pat
     tech = next(e for e in enriched if e.product.name == "TechnologyAdoption")
     text = chunk_product(tech)
     for label in ["Product:", "Division:", "Description:", "ARR:", "Dependent Applications:",
-                  "Total App Cost:", "ROI Ratio:", "Highest Risk:", "Apps at Risk:",
+                  "Total App Cost:", "ROI Ratio:", "Cost Assessment:", "Highest Risk:", "Apps at Risk:",
                   "Apps End-of-Life:", "Revenue at Risk:"]:
         assert label in text, f"Missing label '{label}' in product chunk"
 

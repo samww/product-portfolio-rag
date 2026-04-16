@@ -149,8 +149,8 @@ def test_stream_body_contains_token_events(chroma_collection, stub_embed):
     lines = response.text.splitlines()
     data_lines = [l for l in lines if l.startswith("data: ")]
     token_lines = [l for l in data_lines if not l.startswith("data: [DONE]")]
-    assert "data: Tok1" in token_lines
-    assert "data:  Tok2" in token_lines
+    assert 'data: "Tok1"' in token_lines
+    assert 'data: " Tok2"' in token_lines
 
 
 # ---------------------------------------------------------------------------
@@ -257,9 +257,10 @@ def test_stream_done_event_contains_sources_context_query(chroma_collection, stu
     assert done_lines, "No [DONE] event found in stream"
     payload_str = done_lines[0][len("data: [DONE] "):]
     payload = json.loads(payload_str)
-    assert "sources" in payload
+    assert "app_sources" in payload
+    assert "product_sources" in payload
     assert "context" in payload
     assert "query" in payload
     assert payload["query"] == "Which apps are critical"
-    assert "AuthService" in payload["sources"]
+    assert "AuthService" in payload["app_sources"]
     assert doc_text in payload["context"]

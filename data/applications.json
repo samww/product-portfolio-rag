@@ -20,7 +20,7 @@
       "SegmentBuilder",
       "SurveyEngine"
     ],
-    "notes": "Core panel platform underpinning most survey and audience products. Redis used for real-time quota tracking. Migrated to cloud-native architecture in 2022."
+    "notes": "Core panel platform underpinning most survey and audience products. Redis used for real-time quota tracking. Migrated to cloud-native architecture in 2022. Capability overlap with SegmentBuilder: both manage respondent audience definitions and targeting \u2014 consolidation has been raised informally but not prioritised."
   },
   {
     "name": "SurveyEngine",
@@ -63,7 +63,7 @@
       "APIGateway"
     ],
     "dependents": [],
-    "notes": "Primary client-facing product. React SPA with Node BFF. Most active development team in Platform Engineering. Performance well within SLA."
+    "notes": "Primary client-facing product. React SPA with Node BFF. Most active development team in Platform Engineering. Performance well within SLA. Capability overlap with ClientPortal: both provide clients with self-service access to data and visualisations. Overlap has been noted by the Client Services team; no consolidation plan yet."
   },
   {
     "name": "DataMapper",
@@ -124,7 +124,7 @@
       "CoreDataWarehouse"
     ],
     "dependents": [],
-    "notes": "Used by research teams to define audience profiles for new studies. ML models retrained quarterly. Output feeds into PanelIQ targeting."
+    "notes": "Used by research teams to define audience profiles for new studies. ML models retrained quarterly. Output feeds into PanelIQ targeting. Capability overlap with PanelIQ: audience profiling and segment definition functions are duplicated across both tools. Rationalisation would reduce maintenance burden."
   },
   {
     "name": "FieldOps",
@@ -243,7 +243,7 @@
       "APIGateway"
     ],
     "dependents": [],
-    "notes": "Used by ~800 client users across 120 client organisations. SSO via AuthService. Report files served from S3 with pre-signed URLs."
+    "notes": "Used by ~800 client users across 120 client organisations. SSO via AuthService. Report files served from S3 with pre-signed URLs. Capability overlap with InsightHub around self-service dashboards and data access. InsightHub is more analytics-focused; ClientPortal emphasises report delivery and file exports."
   },
   {
     "name": "ReportFactory",
@@ -487,7 +487,7 @@
     "annual_cost_total": 175000,
     "dependencies": [],
     "dependents": [],
-    "notes": "Excel-based model with no named owner since the Finance Business Partner who maintained it left in Q1 2025. No documentation, no version control, no test coverage. Used in the annual planning process \u00e2\u20ac\u201d Finance leadership depends on it for board-level submissions. High risk: a formula error would not be detected until the planning cycle is complete."
+    "notes": "Excel-based model with no named owner since the Finance Business Partner who maintained it left in Q1 2025. No documentation, no version control, no test coverage. Used in the annual planning process \u00e2\u20ac\u201d Finance leadership depends on it for board-level submissions. High risk: a formula error would not be detected until the planning cycle is complete. Partial capability overlap with WorkforceModel around headcount and workforce cost modelling. Consolidation into a maintained platform has been discussed given ForecastTool has no owner."
   },
   {
     "name": "ProcurementHub",
@@ -526,7 +526,7 @@
     "dependents": [
       "OrgDesigner"
     ],
-    "notes": "Azure-hosted. Used in annual headcount planning and monthly budget reviews. Azure App Service auto-scales during planning season."
+    "notes": "Azure-hosted. Used in annual headcount planning and monthly budget reviews. Azure App Service auto-scales during planning season. Partial capability overlap with ForecastTool: both model headcount and workforce cost projections. ForecastTool covers the broader budget envelope; WorkforceModel is headcount-only."
   },
   {
     "name": "LearningPortal",

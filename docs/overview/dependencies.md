@@ -152,7 +152,7 @@ graph LR
     classDef medium   fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low      fill:#57cc99,stroke:#2e8b57,color:#000
 
-    DataLicensing["DataLicensing\n$6.2m ARR"]
+    DataLicensing["DataLicensing<br/>$6.2m ARR"]
     CoreDataWarehouse
     APIGateway
     ClientPortal
@@ -184,7 +184,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    MediaMeasurement["MediaMeasurement\n$5.1m ARR"]
+    MediaMeasurement["MediaMeasurement<br/>$5.1m ARR"]
     DiaryTracker
     DataMapper
     InsightHub
@@ -222,7 +222,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    RetailInsights["RetailInsights\n$4.6m ARR"]
+    RetailInsights["RetailInsights<br/>$4.6m ARR"]
     SurveyEngine
     SegmentBuilder
     InsightHub
@@ -262,7 +262,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    BrandTracking["BrandTracking Platform\n$4.2m ARR"]
+    BrandTracking["BrandTracking Platform<br/>$4.2m ARR"]
     SurveyEngine
     PanelIQ
     InsightHub
@@ -301,7 +301,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    CustomerSatisfaction["CustomerSatisfaction Suite\n$3.8m ARR"]
+    CustomerSatisfaction["CustomerSatisfaction Suite<br/>$3.8m ARR"]
     SurveyEngine
     WebCollect
     ReportFactory
@@ -340,7 +340,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    ConsumerPanel["ConsumerPanel\n$3.4m ARR"]
+    ConsumerPanel["ConsumerPanel<br/>$3.4m ARR"]
     PanelIQ
     WebCollect
     DataMapper
@@ -378,7 +378,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    TechnologyAdoption["TechnologyAdoption\n$3.3m ARR ⚠"]
+    TechnologyAdoption["TechnologyAdoption<br/>$3.3m ARR ⚠"]
     SurveyEngine
     WebCollect
     DataMapper
@@ -414,7 +414,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    AudienceAnalytics["AudienceAnalytics\n$2.9m ARR"]
+    AudienceAnalytics["AudienceAnalytics<br/>$2.9m ARR"]
     SegmentBuilder
     PanelIQ
     InsightHub
@@ -452,7 +452,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    HealthcareResearch["HealthcareResearch\n$2.7m ARR"]
+    HealthcareResearch["HealthcareResearch<br/>$2.7m ARR"]
     SurveyEngine
     PanelIQ
     ClientPortal
@@ -492,7 +492,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    CompetitiveIntelligence["CompetitiveIntelligence\n$2.2m ARR"]
+    CompetitiveIntelligence["CompetitiveIntelligence<br/>$2.2m ARR"]
     DataMapper
     InsightHub
     CoreDataWarehouse
@@ -525,7 +525,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    LongitudinalStudies["LongitudinalStudies\n$1.8m ARR"]
+    LongitudinalStudies["LongitudinalStudies<br/>$1.8m ARR"]
     DiaryTracker
     DataMapper
     CoreDataWarehouse
@@ -556,7 +556,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    FieldworkServices["FieldworkServices\n$1.6m ARR ⚠"]
+    FieldworkServices["FieldworkServices<br/>$1.6m ARR ⚠"]
     FieldOps
     QuotaManager
     SampleRouter
@@ -595,7 +595,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    PublicAffairsResearch["PublicAffairsResearch\n$1.1m ARR"]
+    PublicAffairsResearch["PublicAffairsResearch<br/>$1.1m ARR"]
     SurveyEngine
     WebCollect
     ReportFactory
@@ -632,7 +632,7 @@ graph LR
     classDef medium  fill:#ffdd57,stroke:#b8860b,color:#000
     classDef low     fill:#57cc99,stroke:#2e8b57,color:#000
 
-    CorporateReporting["CorporateReporting\n$0.9m ARR"]
+    CorporateReporting["CorporateReporting<br/>$0.9m ARR"]
     ReportFactory
     DeliveryTracker
     ClientPortal

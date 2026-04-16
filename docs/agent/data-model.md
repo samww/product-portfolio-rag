@@ -45,6 +45,7 @@ Products are **denormalised at ingestion time** by `src/ingest/joiner.py` — de
 | Dependent Applications | products.json |
 | Total Application Cost ($000s) | Computed: sum of Annual Cost Total across dependent apps |
 | ROI Ratio | Computed: ARR / Total Application Cost, rounded to 2dp |
+| Cost Assessment | Computed: explicit cost-vs-revenue summary — "Cost-negative: application costs ($X) exceed ARR ($Y) by $Z — this product is loss-making on application costs alone" when ROI < 1, otherwise "ARR exceeds application costs (ROI Ratio: X.XX)" |
 | Highest Application Risk | Computed: worst risk rating across dependent apps |
 | Applications At Risk | Computed: dependent apps with High or Critical risk |
 | Applications End Of Life | Computed: dependent apps with EOL status |
