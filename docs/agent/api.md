@@ -1,0 +1,80 @@
+# API Reference
+
+## Endpoints
+
+| Method | Path | Status | Description |
+|---|---|---|---|
+| `GET` | `/health` | Live | Liveness check — returns ChromaDB document count |
+| `POST` | `/query` | Live | Full JSON RAG response |
+| `GET` | `/query/stream` | Live | Streaming RAG response via SSE |
+| `POST` | `/summarise` | Live | Structured risk summary — no request body, no streaming |
+
+No list endpoints (`/applications`, `/products`) — the frontend uses pre-written query chips instead.
+
+## Models
+
+### `QueryRequest` — body for `POST /query`
+```python
+query: str
+top_k: int = 8
+```
+
+### `QueryResponse` — response from `POST /query`
+```python
+answer: str
+sources: list[str]   # display names extracted from first line of each retrieved doc
+query: str
+```
+
+### `SummaryReport` — response from `POST /summarise`
+```python
+overall_health: str           # "Healthy" | "At Risk" | "Critical"
+executive_summary: str
+critical_risks: list[RiskFinding]
+governance_gaps: list[GovernanceGap]
+total_apps_reviewed: int
+total_arr_at_risk_000s: int
+```
+
+### `RiskFinding`
+```python
+application: str
+risk_rating: str
+issue: str
+revenue_at_risk_000s: int
+recommended_action: str
+priority: str                 # "Immediate" | "High" | "Medium"
+```
+
+### `GovernanceGap`
+```python
+application: str
+issue: str
+recommended_action: str
+```
+
+`SummaryReport`, `RiskFinding`, and `GovernanceGap` are defined in `src/rag/models.py` (shared by generator and API). `QueryRequest` and `QueryResponse` are in `src/api/models.py`.
+
+## SSE stream format — `GET /query/stream`
+
+Query params: `query` (str, required), `top_k` (int, default 8).
+
+Tokens arrive as:
+```
+data: <token>\n\n
+```
+
+Final event signals completion and carries metadata:
+```
+data: [DONE] {"sources": ["AppName", ...], "context": ["raw doc text", ...], "query": "..."}
+```
+
+## App state
+
+Routes access shared resources via `request.app.state`, set during FastAPI lifespan in `src/api/main.py`:
+
+| Attribute | Type |
+|---|---|
+| `openai_client` | `openai.OpenAI` |
+| `collection` | `chromadb.Collection` |
+| `embed` | `Callable[[list[str]], list[list[float]]]` |
