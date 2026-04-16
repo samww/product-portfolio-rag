@@ -141,7 +141,9 @@ def test_generate_summary_uses_structured_output_parse():
     generate_summary(docs, client)
     assert client.beta.chat.completions.parse.called
     call_kwargs = client.beta.chat.completions.parse.call_args.kwargs
-    assert call_kwargs.get("response_format") is SummaryReport
+    # generator uses a private LLM-only schema (excludes product_exposures)
+    from pydantic import BaseModel
+    assert issubclass(call_kwargs.get("response_format"), BaseModel)
 
 
 def test_generate_summary_passes_all_docs_as_context():

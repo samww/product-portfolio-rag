@@ -13,6 +13,8 @@
 - Frontend tests: `cd src/frontend && npx vitest run`
 - Frontend dev server: `cd src/frontend && npm run dev`
 - Frontend build: `cd src/frontend && npm run build`
+- Docker build: `docker compose build`
+- Docker run: `docker compose up`
 
 ## Slices
 

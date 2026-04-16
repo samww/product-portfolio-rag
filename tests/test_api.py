@@ -199,12 +199,19 @@ def _stub_summary_openai(report: dict):
     return client
 
 
-def test_summarise_returns_200_with_summary_report_shape(chroma_collection, stub_embed):
+def _make_summarise_app(chroma_collection, stub_embed):
+    """Minimal app with all state /summarise needs, including product exposures."""
     test_app = FastAPI()
     test_app.include_router(router)
     test_app.state.collection = chroma_collection
     test_app.state.embed = stub_embed
     test_app.state.openai_client = _stub_summary_openai(_SUMMARY_REPORT)
+    test_app.state.app_product_exposures = {}
+    return test_app
+
+
+def test_summarise_returns_200_with_summary_report_shape(chroma_collection, stub_embed):
+    test_app = _make_summarise_app(chroma_collection, stub_embed)
     doc = "Application: AuthService\nRisk: Critical"
     chroma_collection.upsert(
         documents=[doc],
@@ -226,14 +233,38 @@ def test_summarise_returns_200_with_summary_report_shape(chroma_collection, stub
 
 
 def test_summarise_overall_health_is_valid_value(chroma_collection, stub_embed):
-    test_app = FastAPI()
-    test_app.include_router(router)
-    test_app.state.collection = chroma_collection
-    test_app.state.embed = stub_embed
-    test_app.state.openai_client = _stub_summary_openai(_SUMMARY_REPORT)
+    test_app = _make_summarise_app(chroma_collection, stub_embed)
     with TestClient(test_app, raise_server_exceptions=True) as c:
         response = c.post("/summarise")
     assert response.json()["overall_health"] in ("Healthy", "At Risk", "Critical")
+
+
+# ---------------------------------------------------------------------------
+# Cycle 15: GET / serves the frontend HTML (static files)
+# ---------------------------------------------------------------------------
+
+def test_get_root_serves_frontend_html():
+    from fastapi.testclient import TestClient
+    from src.api.main import app
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_get_assets_serves_static_files():
+    import os
+    from pathlib import Path
+    from fastapi.testclient import TestClient
+    from src.api.main import app
+    # Find a real asset file from the built frontend
+    assets_dir = Path("src/api/static/assets")
+    asset_files = list(assets_dir.glob("*.js"))
+    assert asset_files, "No built JS assets found — run npm run build first"
+    asset_name = asset_files[0].name
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get(f"/assets/{asset_name}")
+    assert response.status_code == 200
 
 
 def test_stream_done_event_contains_sources_context_query(chroma_collection, stub_embed):

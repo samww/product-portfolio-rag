@@ -7,6 +7,7 @@ from pathlib import Path
 import chromadb
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 
 from src.api.routes import router
@@ -42,5 +43,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
+_STATIC_DIR = Path(__file__).parent / "static"
+
 app = FastAPI(title="Product Portfolio RAG", lifespan=lifespan)
 app.include_router(router)
+app.mount("/", StaticFiles(directory=_STATIC_DIR, html=True), name="static")
