@@ -5,7 +5,9 @@ COPY src/frontend/package.json src/frontend/package-lock.json ./
 RUN npm ci
 COPY src/frontend/ ./
 # vite.config.ts sets outDir: '../api/static' — outputs to /app/src/api/static
-RUN npm run build
+# node_modules/.bin/tsc is a shell wrapper without execute permission in the remote
+# Linux builder — invoke the JS entry points directly to bypass the permission check
+RUN node node_modules/typescript/bin/tsc -b && node node_modules/vite/bin/vite.js build
 
 # Stage 2: Python runtime
 FROM python:3.12-slim

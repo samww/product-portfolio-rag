@@ -35,7 +35,15 @@
       "Bash(npm test *)",
       "Bash(grep -o '£[^`]*')",
       "Bash(uv export *)",
-      "Bash(ls /e/Production/product-portfolio-rag/.env*)"
+      "Bash(ls /e/Production/product-portfolio-rag/.env*)",
+      "Bash(ls -la infra/)",
+      "Bash(ls -la scripts/)",
+      "Bash(az bicep *)",
+      "Bash(az --version)",
+      "Bash(bash tests/test_infra.sh)",
+      "Bash(chmod +x scripts/deploy.sh scripts/setup_auth.sh)",
+      "Bash(gh pr *)",
+      "Bash(powershell -File tests/test_infra.ps1)"
     ]
   }
 }

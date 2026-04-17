@@ -28,7 +28,7 @@
 | 6 | Frontend — query chips, streaming response, context panel | #7 |
 | 7 | Frontend — summary report panel with health badge | #8 |
 | 8 | Docker multi-stage build and container entrypoint | #9 |
-| 9 | Azure deployment — Bicep, Easy Auth, deploy scripts | #10 |
+| 9 | Azure deployment — `az containerapp up`, Easy Auth (`az containerapp auth microsoft update` + `az containerapp auth update`), deploy scripts | #10 |
 | 10 | Documentation — README, CLAUDE.md, ADRs | #11 |
 
 ## Agent docs (load as needed)
