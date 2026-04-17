@@ -1,0 +1,11 @@
+Product: ConsumerPanel
+Division: Data Collection
+Description: Syndicated consumer panel providing continuous purchase and behaviour tracking data across grocery, health, and personal care categories
+ARR: 3400000
+Dependent Applications: PanelIQ, WebCollect, DataMapper, SampleRouter
+Total App Cost: 1922000
+ROI Ratio: 1.769
+Highest Risk: Medium
+Apps at Risk: None
+Apps End-of-Life: None
+Revenue at Ris

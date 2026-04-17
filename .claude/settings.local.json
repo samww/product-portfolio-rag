@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(gh auth:*)",
+      "Read(//c/Users/sam_w/.claude/**)",
+      "Bash(gh repo:*)",
+      "Bash(gh issue:*)",
+      "Bash(uv --version)",
+      "Bash(uv add:*)",
+      "Bash(uv run:*)",
+      "Bash(python:*)",
+      "Bash(ls src/)",
+      "Bash(ls tests/fixtures/)",
+      "Bash(xargs grep *)",
+      "Bash(python3)",
+      "Bash(curl -s \"http://127.0.0.1:8000/query/stream?query=Which+applications+have+no+named+owner\")",
+      "Bash(kill %1)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s \"http://127.0.0.1:8001/query/stream?query=Which+applications+have+no+named+owner\")",
+      "Bash(curl -s \"http://127.0.0.1:8002/query/stream?query=Which+applications+have+no+named+owner\")",
+      "Bash(curl -N \"http://127.0.0.1:8003/query/stream?query=Which+applications+have+no+named+owner\")",
+      "Bash(curl *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(ls /c/Users/sam_w/AppData/Local/Temp/issue1*)",
+      "Bash(python3 *)",
+      "Bash(wc *)",
+      "Bash(npm --version)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx vitest *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(grep -o '£[^`]*')",
+      "Bash(uv export *)",
+      "Bash(ls /e/Production/product-portfolio-rag/.env*)"
+    ]
+  }
+}
