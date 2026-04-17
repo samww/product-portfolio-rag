@@ -11,6 +11,7 @@ docs/background/
 
 # Project-specific generated directories
 chroma_data/
+.chroma/
 src/api/static/
 node_modules/
 
