@@ -13,6 +13,9 @@ from openai import OpenAI
 from src.api.routes import router
 from src.ingest.joiner import compute_app_product_exposures, enrich_products
 from src.ingest.loader import load_applications, load_products
+from src.rag.generator import generate_summary
+from src.rag.summary.adapters import ChromaAtRiskSource, DictExposureLookup
+from src.rag.summary.service import SummaryService
 
 DATA_DIR = Path(__file__).parent.parent.parent / "data"
 
@@ -39,7 +42,11 @@ async def lifespan(app: FastAPI):
     app.state.openai_client = openai_client
     app.state.collection = collection
     app.state.embed = _build_embed(openai_client)
-    app.state.app_product_exposures = compute_app_product_exposures(enriched)
+    app.state.summary_service = SummaryService(
+        records=ChromaAtRiskSource(collection),
+        analyst=lambda docs: generate_summary(list(docs), openai_client),
+        exposures=DictExposureLookup(compute_app_product_exposures(enriched)),
+    )
     yield
 
 

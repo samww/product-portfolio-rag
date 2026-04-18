@@ -200,13 +200,21 @@ def _stub_summary_openai(report: dict):
 
 
 def _make_summarise_app(chroma_collection, stub_embed):
-    """Minimal app with all state /summarise needs, including product exposures."""
+    """Minimal app with all state /summarise needs."""
+    from src.rag.models import SummaryReport
+    from src.rag.summary.adapters import DictExposureLookup
+    from src.rag.summary.service import SummaryService
+
+    canned = SummaryReport(**_SUMMARY_REPORT)
     test_app = FastAPI()
     test_app.include_router(router)
     test_app.state.collection = chroma_collection
     test_app.state.embed = stub_embed
-    test_app.state.openai_client = _stub_summary_openai(_SUMMARY_REPORT)
-    test_app.state.app_product_exposures = {}
+    test_app.state.summary_service = SummaryService(
+        records=type("R", (), {"fetch": lambda self: []})(),
+        analyst=lambda _docs: canned,
+        exposures=DictExposureLookup({}),
+    )
     return test_app
 
 
@@ -237,6 +245,30 @@ def test_summarise_overall_health_is_valid_value(chroma_collection, stub_embed):
     with TestClient(test_app, raise_server_exceptions=True) as c:
         response = c.post("/summarise")
     assert response.json()["overall_health"] in ("Healthy", "At Risk", "Critical")
+
+
+def test_summarise_route_delegates_to_summary_service():
+    from src.rag.models import SummaryReport
+    from src.rag.summary.adapters import DictExposureLookup
+    from src.rag.summary.service import SummaryService
+
+    canned_report = SummaryReport(**_SUMMARY_REPORT)
+    svc = SummaryService(
+        records=type("R", (), {"fetch": lambda self: []})(),
+        analyst=lambda _docs: canned_report,
+        exposures=DictExposureLookup({"AuthService": [("Billing", 400)]}),
+    )
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.summary_service = svc
+
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.post("/summarise")
+
+    assert response.status_code == 200
+    risks = response.json()["critical_risks"]
+    assert risks[0]["application"] == "AuthService"
+    assert risks[0]["product_exposures"] == [{"product": "Billing", "arr_000s": 400}]
 
 
 # ---------------------------------------------------------------------------
