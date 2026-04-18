@@ -43,7 +43,8 @@
       "Bash(bash tests/test_infra.sh)",
       "Bash(chmod +x scripts/deploy.sh scripts/setup_auth.sh)",
       "Bash(gh pr *)",
-      "Bash(powershell -File tests/test_infra.ps1)"
+      "Bash(powershell -File tests/test_infra.ps1)",
+      "Bash(git commit *)"
     ]
   }
 }

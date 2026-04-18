@@ -60,9 +60,37 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
     await user.click(screen.getByText(CHIP_QUERY))
 
     expect(screen.getByRole('textbox')).toHaveValue(CHIP_QUERY)
+  })
+
+  it('pressing Enter submits the query', async () => {
+    const { urls } = mockEventSource()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox'), 'test query{Enter}')
+
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain(encodeURIComponent('test query'))
+  })
+
+  it('pressing Shift+Enter does not submit the query', async () => {
+    const { urls } = mockEventSource()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByRole('textbox'), 'test query{Shift>}{Enter}{/Shift}')
+
+    expect(urls).toHaveLength(0)
+  })
+
+  it('query input is a textarea (multi-line capable)', () => {
+    mockEventSource()
+    render(<App />)
+    expect(screen.getByRole('textbox').tagName).toBe('TEXTAREA')
   })
 
   it('clicking a chip triggers submission', async () => {
@@ -70,6 +98,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
     await user.click(screen.getByText(CHIP_QUERY))
 
     expect(urls).toHaveLength(1)

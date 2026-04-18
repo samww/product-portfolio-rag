@@ -16,17 +16,35 @@ const CHIPS = [
 ]
 
 describe('QueryChips', () => {
-  it('renders all 4 group labels', () => {
+  it('shows a "Show suggested queries" toggle by default', () => {
     render(<QueryChips onSelect={() => {}} />)
-    for (const group of GROUPS) {
-      expect(screen.getByText(group)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /show suggested queries/i })).toBeInTheDocument()
+  })
+
+  it('chips are not visible by default', () => {
+    render(<QueryChips onSelect={() => {}} />)
+    expect(screen.queryByText(CHIPS[0].query)).not.toBeInTheDocument()
+  })
+
+  it('clicking the toggle reveals all 8 chips', async () => {
+    const user = userEvent.setup()
+    render(<QueryChips onSelect={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
+
+    for (const { query } of CHIPS) {
+      expect(screen.getByText(query)).toBeInTheDocument()
     }
   })
 
-  it('renders all 8 chips', () => {
+  it('clicking the toggle reveals all 4 group labels', async () => {
+    const user = userEvent.setup()
     render(<QueryChips onSelect={() => {}} />)
-    for (const { query } of CHIPS) {
-      expect(screen.getByText(query)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
+
+    for (const group of GROUPS) {
+      expect(screen.getByText(group)).toBeInTheDocument()
     }
   })
 
@@ -35,6 +53,7 @@ describe('QueryChips', () => {
     const onSelect = vi.fn()
     render(<QueryChips onSelect={onSelect} />)
 
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
     await user.click(screen.getByText(CHIPS[0].query))
     expect(onSelect).toHaveBeenCalledWith(CHIPS[0].query)
   })
@@ -44,6 +63,7 @@ describe('QueryChips', () => {
     const onSelect = vi.fn()
     render(<QueryChips onSelect={onSelect} />)
 
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
     await user.click(screen.getByText(CHIPS[4].query))
     expect(onSelect).toHaveBeenCalledWith(CHIPS[4].query)
   })

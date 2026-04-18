@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { QueryChips } from './components/QueryChips'
 import { ResponseDisplay } from './components/ResponseDisplay'
 import { SummaryReport } from './components/SummaryReport'
@@ -14,6 +14,14 @@ function App() {
   const [summary, setSummary] = useState<SummaryReportData | null>(null)
   const [isSummarising, setIsSummarising] = useState(false)
   const esRef = useRef<EventSource | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [query])
 
   function handleChipSelect(chipQuery: string) {
     setQuery(chipQuery)
@@ -76,8 +84,11 @@ function App() {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') submit(query)
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submit(query)
+    }
   }
 
   return (
@@ -103,22 +114,26 @@ function App() {
 
         <QueryChips onSelect={handleChipSelect} />
 
-        <div className="mt-6 flex gap-3">
-          <input
-            type="text"
+        <div className="mt-6 rounded-xl border-2 border-violet-500/40 bg-slate-800 shadow-lg shadow-violet-950/30 focus-within:border-violet-500/80 focus-within:shadow-violet-900/40 transition-all">
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything about the portfolio…"
-            className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors"
+            className="w-full bg-transparent px-4 pt-3.5 pb-2 text-slate-100 placeholder-slate-500 focus:outline-none resize-none overflow-hidden leading-relaxed"
           />
-          <button
-            onClick={() => submit(query)}
-            disabled={isStreaming}
-            className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-lg font-medium text-sm transition-colors cursor-pointer"
-          >
-            {isStreaming ? 'Streaming…' : 'Ask'}
-          </button>
+          <div className="flex items-center justify-between px-3 pb-3">
+            <span className="text-xs text-slate-500">Enter to send · Shift+Enter for newline</span>
+            <button
+              onClick={() => submit(query)}
+              disabled={isStreaming}
+              className="px-5 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-lg font-semibold text-sm transition-colors cursor-pointer shadow-md shadow-violet-900/50"
+            >
+              {isStreaming ? 'Streaming…' : 'Ask'}
+            </button>
+          </div>
         </div>
 
         <ResponseDisplay
