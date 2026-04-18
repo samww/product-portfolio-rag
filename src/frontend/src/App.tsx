@@ -25,7 +25,8 @@ function App() {
 
   function handleChipSelect(chipQuery: string) {
     setQuery(chipQuery)
-    textareaRef.current?.focus()
+    setAnswer('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function submit(q: string) {
