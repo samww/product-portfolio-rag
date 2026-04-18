@@ -89,3 +89,29 @@ OpenAI offers three relevant embedding models: `text-embedding-ada-002` (legacy)
 - `ada-002` is explicitly legacy as of 2024.
 
 **Mitigation:** The model name is a single constant in `src/ingest/indexer.py`, trivially swappable.
+
+---
+
+## ADR 5: Deterministic enrichment for product exposures in `/summarise`
+
+**Status:** Accepted
+
+**Context:**
+The `POST /summarise` response includes a `product_exposures` field on each risk finding — a list of products financially exposed to that application, with ARR figures. This data exists in the portfolio: each product declares which applications it depends on, and those dependencies are traversed at ingestion time to compute `revenue_at_risk`.
+
+Two approaches for populating `product_exposures` in the summary:
+
+**Option A — LLM inference (rejected):** Include product-application dependency data in the retrieved context and ask the LLM to produce `product_exposures` as part of its structured output.
+
+**Option B — Deterministic enrichment (chosen):** Ask the LLM only for fields it can reliably synthesise (risk ratings, issues, recommendations). Post-hoc, inject `product_exposures` from a precomputed lookup built at startup from the raw data.
+
+**Decision:** Option B — deterministic enrichment, applied in `src/api/routes.py` after `generate_summary` returns.
+
+**Reasons:**
+- LLMs are unreliable at precise structured lookups from text. ARR figures and product-to-application mappings are deterministic facts, not synthesis tasks. Asking the LLM to reproduce them from retrieved context produces hallucinated or misattributed figures.
+- The correct values are already computed at startup in `compute_app_product_exposures` (same graph traversal used for ingestion). Reusing that output is exact and free.
+- Keeping `product_exposures` out of the LLM schema (`_SummaryReportLLM`) prevents the model from attempting to fill a field it cannot fill reliably.
+
+**Trade-offs accepted:**
+- The boundary between what the LLM produced and what was deterministically computed is not visible in the API response. A code reviewer inspecting only the route handler or the `SummaryReport` schema would not see it without reading `generator.py`.
+- This is a hybrid pipeline, not pure RAG generation. The LLM genuinely synthesises risk findings, executive summary, governance gaps, and health rating from retrieved documents. `product_exposures` is a post-hoc join, not LLM output.

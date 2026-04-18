@@ -30,8 +30,9 @@ graph LR
 
     subgraph Summarise
         I["POST /summarise"] --> J["ChromaDB metadata filter\nHigh/Critical OR ownerless"]
-        J --> K["GPT-4o structured output"]
-        K --> L["SummaryReport JSON"]
+        J --> K["GPT-4o structured output\n(risk findings, summary, health)"]
+        K --> M["Deterministic enrichment\nproduct_exposures injected\nfrom startup lookup"]
+        M --> L["SummaryReport JSON"]
     end
 ```
 
@@ -156,7 +157,7 @@ $env:OPENAI_API_KEY = "sk-..."
 
 | Path | Contents |
 |---|---|
-| `docs/overview/decisions.md` | Architecture Decision Records — ChromaDB vs Azure AI Search, denormalised products, no chunking, embedding model choice |
+| `docs/overview/decisions.md` | Architecture Decision Records — ChromaDB vs Azure AI Search, denormalised products, no chunking, embedding model choice, deterministic enrichment in `/summarise` |
 | `docs/overview/dependencies.md` | Mermaid dependency diagrams for all 30 applications and 14 products |
 | `docs/agent/backend.md` | Backend architecture, request flow, module map |
 | `docs/agent/data-model.md` | Application and product schemas, key risk scenarios |
