@@ -59,7 +59,7 @@ export function QueryChips({ onSelect }: Props) {
                 {chips.map((query) => (
                   <button
                     key={query}
-                    onClick={() => onSelect(query)}
+                    onClick={() => { setOpen(false); onSelect(query) }}
                     className="px-3 py-1.5 rounded-full text-sm bg-green-900 text-green-100 border border-green-700 hover:bg-green-800 hover:border-green-500 transition-colors cursor-pointer"
                   >
                     {query}

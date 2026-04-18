@@ -25,7 +25,7 @@ function App() {
 
   function handleChipSelect(chipQuery: string) {
     setQuery(chipQuery)
-    submit(chipQuery)
+    textareaRef.current?.focus()
   }
 
   function submit(q: string) {

@@ -44,7 +44,10 @@
       "Bash(chmod +x scripts/deploy.sh scripts/setup_auth.sh)",
       "Bash(gh pr *)",
       "Bash(powershell -File tests/test_infra.ps1)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(gh issue *)",
+      "Read(//tmp/**)",
+      "Read(//c/Users/sam_w/AppData/Local/Temp/**)"
     ]
   }
 }

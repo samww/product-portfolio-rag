@@ -9,7 +9,7 @@
 | `tests/fixtures/sample_applications.json` | 5-record subset for fast test execution |
 | `tests/fixtures/sample_products.json` | 3-record subset with known ROI values for assertions |
 
-For the full inventory of all 30 applications and 14 products, see issue #1.
+The full inventory is in `data/applications.json` and `data/products.json`.
 
 ## Application schema
 

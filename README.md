@@ -55,7 +55,7 @@ Are there any capability overlaps between applications that could be consolidate
 | Vector store | ChromaDB — local file persistence at `.chroma/` |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS |
 | Container | Docker multi-stage build (Node 20 → Python 3.12) |
-| Cloud | Azure Container Apps, Bicep, optional Easy Auth |
+| Cloud | Azure Container Apps, az CLI, optional Easy Auth |
 
 No LangChain or LlamaIndex — the RAG pipeline is built directly with the OpenAI SDK and ChromaDB SDK.
 
@@ -99,8 +99,6 @@ To force a full re-index at any point: `uv run python scripts/ingest.py --reset`
 
 ## Environment variables
 
-> **Note:** This section will be completed once the Azure deployment slice is implemented. Additional variables are expected for Easy Auth configuration.
-
 | Variable | Required | Description |
 |---|---|---|
 | `OPENAI_API_KEY` | Yes | Used for both embeddings (`text-embedding-3-small`) and generation (`GPT-4o`) |
@@ -127,8 +125,11 @@ data/
   applications.json     # 30 application records (source of truth)
   products.json         # 14 product records
 scripts/
-  ingest.py       # ingestion entry point
-  start.sh        # container entrypoint (always passes --reset)
+  ingest.py           # ingestion entry point
+  start.sh            # container entrypoint (always passes --reset)
+  deploy.ps1          # deploy to Azure Container Apps
+  setup_auth.ps1      # enable Easy Auth on deployed app
+  validate_data.py    # validate data/*.json integrity
 tests/
   fixtures/       # 5-app and 3-product subsets for fast test runs
 docs/
@@ -138,7 +139,18 @@ docs/
 
 ## Azure deployment
 
-The `infra/` directory contains Bicep modules for deploying to Azure Container Apps. Azure AD Easy Auth can be enabled by supplying the optional AD parameters — see `scripts/deploy.sh` for the full deployment sequence.
+Two PowerShell scripts handle deployment to Azure Container Apps:
+
+```powershell
+# Deploy (creates resource group, builds image in ACR, creates/updates Container App)
+$env:OPENAI_API_KEY = "sk-..."
+.\scripts\deploy.ps1
+
+# Enable Easy Auth (run once after first deploy — creates Entra app registration)
+.\scripts\setup_auth.ps1
+```
+
+`deploy.ps1` is idempotent — re-running it on an existing deployment updates the running app with a fresh image. Default app name is `portfolio-rag` in resource group `rg-portfolio-rag` (UK South); override with `$env:APP_NAME`, `$env:RESOURCE_GROUP`, `$env:LOCATION`.
 
 ## Docs
 

@@ -93,7 +93,7 @@ describe('App', () => {
     expect(screen.getByRole('textbox').tagName).toBe('TEXTAREA')
   })
 
-  it('clicking a chip triggers submission', async () => {
+  it('clicking a chip does not submit — user must press Enter or Ask', async () => {
     const { urls } = mockEventSource()
     const user = userEvent.setup()
     render(<App />)
@@ -101,7 +101,17 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
     await user.click(screen.getByText(CHIP_QUERY))
 
-    expect(urls).toHaveLength(1)
-    expect(urls[0]).toContain(encodeURIComponent(CHIP_QUERY))
+    expect(urls).toHaveLength(0)
+  })
+
+  it('clicking a chip collapses the suggested queries section', async () => {
+    mockEventSource()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /show suggested queries/i }))
+    await user.click(screen.getByText(CHIP_QUERY))
+
+    expect(screen.getByRole('button', { name: /show suggested queries/i })).toBeInTheDocument()
   })
 })
