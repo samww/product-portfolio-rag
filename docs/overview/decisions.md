@@ -105,7 +105,7 @@ Two approaches for populating `product_exposures` in the summary:
 
 **Option B — Deterministic enrichment (chosen):** Ask the LLM only for fields it can reliably synthesise (risk ratings, issues, recommendations). Post-hoc, inject `product_exposures` from a precomputed lookup built at startup from the raw data.
 
-**Decision:** Option B — deterministic enrichment, applied in `src/api/routes.py` after `generate_summary` returns.
+**Decision:** Option B — deterministic enrichment, applied inside `SummaryService.run()` (in `src/rag/summary/service.py`) after the structured-output analyst returns. The API route is a two-line delegate to the service; the enrichment rule has no FastAPI or Chroma awareness.
 
 **Reasons:**
 - LLMs are unreliable at precise structured lookups from text. ARR figures and product-to-application mappings are deterministic facts, not synthesis tasks. Asking the LLM to reproduce them from retrieved context produces hallucinated or misattributed figures.
@@ -113,5 +113,5 @@ Two approaches for populating `product_exposures` in the summary:
 - Keeping `product_exposures` out of the LLM schema (`_SummaryReportLLM`) prevents the model from attempting to fill a field it cannot fill reliably.
 
 **Trade-offs accepted:**
-- The boundary between what the LLM produced and what was deterministically computed is not visible in the API response. A code reviewer inspecting only the route handler or the `SummaryReport` schema would not see it without reading `generator.py`.
+- The boundary between what the LLM produced and what was deterministically computed is not visible in the API response. A code reviewer inspecting only the `SummaryReport` schema would not see it without reading `src/rag/summary/service.py` and `src/rag/generator.py`.
 - This is a hybrid pipeline, not pure RAG generation. The LLM genuinely synthesises risk findings, executive summary, governance gaps, and health rating from retrieved documents. `product_exposures` is a post-hoc join, not LLM output.

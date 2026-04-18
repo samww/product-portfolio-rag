@@ -3,7 +3,7 @@
 Run with: uv run pytest tests/test_retriever.py -v
 """
 
-from src.rag.retriever import retrieve, retrieve_at_risk_docs, RetrievedDoc
+from src.rag.retriever import retrieve, retrieve_at_risk_docs, RetrievedDoc, parse_doc_source
 
 _APP_META = {"doc_type": "application", "division": "X", "risk_rating": "Low", "status": "Active", "owner": "X"}
 _PRODUCT_META = {"doc_type": "product", "division": "X", "risk_rating": "Low", "status": "Active", "owner": ""}
@@ -146,3 +146,48 @@ def test_retrieve_at_risk_docs_deduplicates(chroma_collection, stub_embed):
     )
     results = retrieve_at_risk_docs(chroma_collection)
     assert len(results) == 1
+
+
+# ---------------------------------------------------------------------------
+# Cycle 8: parse_doc_source extracts kind and name from Application prefix
+# ---------------------------------------------------------------------------
+
+def test_parse_doc_source_application():
+    doc = RetrievedDoc(
+        document="Application: AuthService\nRisk: Critical",
+        metadata={},
+        distance=0.0,
+    )
+    kind, name = parse_doc_source(doc)
+    assert kind == "application"
+    assert name == "AuthService"
+
+
+# ---------------------------------------------------------------------------
+# Cycle 9: parse_doc_source extracts kind and name from Product prefix
+# ---------------------------------------------------------------------------
+
+def test_parse_doc_source_product():
+    doc = RetrievedDoc(
+        document="Product: BrandTracking\nVendor: Salesforce",
+        metadata={},
+        distance=0.0,
+    )
+    kind, name = parse_doc_source(doc)
+    assert kind == "product"
+    assert name == "BrandTracking"
+
+
+# ---------------------------------------------------------------------------
+# Cycle 10: parse_doc_source returns None kind for unrecognised prefix
+# ---------------------------------------------------------------------------
+
+def test_parse_doc_source_unknown_prefix():
+    doc = RetrievedDoc(
+        document="Some other content\nno prefix here",
+        metadata={},
+        distance=0.0,
+    )
+    kind, name = parse_doc_source(doc)
+    assert kind is None
+    assert name == "Some other content"

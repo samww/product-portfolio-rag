@@ -120,6 +120,7 @@ cd src/frontend && npx vitest run
 src/
   ingest/         # loader, joiner, chunker, indexer
   rag/            # retriever, generator, prompts, models
+    summary/      # SummaryService — ports & adapters for /summarise composition
   api/            # FastAPI app, routes, API-layer models
   frontend/       # React + Vite frontend
 data/

@@ -49,14 +49,24 @@ Entry point: `scripts/ingest.py` (run with `--reset` to wipe and re-index).
 |---|---|
 | `retriever.py` | `retrieve()`: embeds query, fetches top-k apps and top-k products separately via `_query_where()`, merges and sorts by distance. `retrieve_at_risk_docs()`: metadata filter only — returns all High/Critical risk and ownerless application docs, deduped. |
 | `prompts.py` | `SYSTEM_PROMPT`: instructs model to cite app names, trace full dependency chains, respond with "I cannot determine this from the portfolio data" if context is insufficient. `SUMMARY_SYSTEM_PROMPT`: instructs model to produce a structured `SummaryReport` with prioritised findings. |
-| `generator.py` | `generate_answer()`: free-text RAG call, returns `GeneratedAnswer(answer, sources)`. `generate_answer_stream()`: same but yields token deltas. `generate_summary()`: structured output via `openai.beta.chat.completions.parse` using a private `_SummaryReportLLM` schema (excludes `product_exposures` so the LLM never tries to populate it — exposures are injected deterministically by the route). |
+| `generator.py` | `generate_answer()`: free-text RAG call, returns `GeneratedAnswer(answer, sources)`. `generate_answer_stream()`: same but yields token deltas. `generate_summary()`: structured output via `openai.beta.chat.completions.parse` using a private `_SummaryReportLLM` schema (excludes `product_exposures` so the LLM never tries to populate it — exposures are injected downstream by `SummaryService`). |
+
+### Summary orchestration — `src/rag/summary/`
+
+Ports-and-adapters package owning the `/summarise` composition. Pure in-process; no FastAPI, Chroma, or OpenAI awareness in the domain module.
+
+| Module | Responsibility |
+|---|---|
+| `ports.py` | `AtRiskRecordsSource` and `ExposureLookup` Protocols; `StructuredAnalyst` as a `Callable[[Sequence[RetrievedDoc]], SummaryReport]` type alias |
+| `service.py` | `SummaryService` — frozen dataclass with a single `run()` method: fetch records → call analyst → inject `product_exposures` into each `RiskFinding` |
+| `adapters.py` | `ChromaAtRiskSource` wraps `retrieve_at_risk_docs(collection)`; `DictExposureLookup` wraps the dict returned by `compute_app_product_exposures` (contract: returns `[]` for unknown apps, never raises) |
 
 ### API — `src/api/`
 
 | Module | Responsibility |
 |---|---|
-| `main.py` | FastAPI app + lifespan: loads `.env`, creates `OpenAI` client, connects `PersistentClient` at `.chroma/`, loads `data/applications.json` + `data/products.json`, computes `app_product_exposures` via `compute_app_product_exposures`, attaches all to `app.state` |
-| `routes.py` | Route handlers — access shared resources via `request.app.state`. `/summarise` injects `product_exposures` into each `RiskFinding` from `app.state.app_product_exposures` after the LLM call. |
+| `main.py` | FastAPI app + lifespan: loads `.env`, creates `OpenAI` client, connects `PersistentClient` at `.chroma/`, loads `data/applications.json` + `data/products.json`, composes a `SummaryService` from `ChromaAtRiskSource`, a `generate_summary` lambda, and `DictExposureLookup(compute_app_product_exposures(enriched))`, attaches client + collection + embed + `summary_service` to `app.state` |
+| `routes.py` | Route handlers — access shared resources via `request.app.state`. `/summarise` is a two-line delegate to `request.app.state.summary_service.run()`. |
 | `models.py` | Pydantic request/response models for API layer |
 
 Structured output models (`SummaryReport`, `RiskFinding`, `GovernanceGap`) live in `src/rag/models.py` — shared by the generator and the API response schema.

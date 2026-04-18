@@ -13,6 +13,18 @@ class RetrievedDoc:
     distance: float
 
 
+def parse_doc_source(doc: "RetrievedDoc") -> tuple[str | None, str]:
+    """Return (kind, name) from the first line of a RetrievedDoc.
+
+    kind is "application", "product", or None when no known prefix is found.
+    """
+    first_line = doc.document.split("\n")[0]
+    for prefix, kind in (("Application: ", "application"), ("Product: ", "product")):
+        if first_line.startswith(prefix):
+            return kind, first_line[len(prefix):]
+    return None, first_line
+
+
 def _query_where(
     query_embedding: list[float],
     collection: chromadb.Collection,

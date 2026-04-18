@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from src.api.models import QueryRequest, QueryResponse
 from src.rag.generator import generate_answer, generate_answer_stream
 from src.rag.models import SummaryReport
-from src.rag.retriever import retrieve
+from src.rag.retriever import retrieve, parse_doc_source
 
 router = APIRouter()
 
@@ -48,11 +48,11 @@ async def query_stream(query: str, top_k: int = 8, request: Request = None):
     app_sources: list[str] = []
     product_sources: list[str] = []
     for doc in docs:
-        first_line = doc.document.split("\n")[0]
-        if first_line.startswith("Application: "):
-            app_sources.append(first_line[len("Application: "):])
-        elif first_line.startswith("Product: "):
-            product_sources.append(first_line[len("Product: "):])
+        kind, name = parse_doc_source(doc)
+        if kind == "application":
+            app_sources.append(name)
+        elif kind == "product":
+            product_sources.append(name)
 
     context_texts = [doc.document for doc in docs]
 
