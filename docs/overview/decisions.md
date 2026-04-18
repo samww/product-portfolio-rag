@@ -21,7 +21,7 @@ The vector store could be either ChromaDB (embedded, open-source) or Azure AI Se
 
 **Trade-offs accepted:**
 - ChromaDB has no managed service guarantees, no built-in authentication, no enterprise scaling.
-- Data is ephemeral on container restart (regenerated from JSON at startup, ~10 second delay) — acceptable for a demo.
+- Data is regenerated from JSON on the first container start (~10 second delay). Subsequent starts are no-ops because `ingest.py` upserts by ID and exits early when the collection is already populated — acceptable for a demo.
 
 ---
 

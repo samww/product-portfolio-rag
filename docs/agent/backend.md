@@ -47,7 +47,7 @@ Entry point: `scripts/ingest.py` (run with `--reset` to wipe and re-index).
 
 | Module | Responsibility |
 |---|---|
-| `retriever.py` | `retrieve()`: embeds query, fetches top-k apps and top-k products separately via `_query_where()`, merges and sorts by distance. `retrieve_at_risk_docs()`: metadata filter only — returns all High/Critical risk and ownerless application docs, deduped. |
+| `retriever.py` | `retrieve()`: embeds query, fetches top-k apps and top-k products separately via `_query_where()`, merges and sorts by distance. `retrieve_at_risk_docs()`: metadata filter only — returns all High/Critical risk and ownerless application docs, deduped. `parse_doc_source(doc)`: returns `(kind, name)` from the first line of a `RetrievedDoc`; `kind` is `"application"`, `"product"`, or `None`. Used by `generator.py` and `routes.py` to extract display names. |
 | `prompts.py` | `SYSTEM_PROMPT`: instructs model to cite app names, trace full dependency chains, respond with "I cannot determine this from the portfolio data" if context is insufficient. `SUMMARY_SYSTEM_PROMPT`: instructs model to produce a structured `SummaryReport` with prioritised findings. |
 | `generator.py` | `generate_answer()`: free-text RAG call, returns `GeneratedAnswer(answer, sources)`. `generate_answer_stream()`: same but yields token deltas. `generate_summary()`: structured output via `openai.beta.chat.completions.parse` using a private `_SummaryReportLLM` schema (excludes `product_exposures` so the LLM never tries to populate it — exposures are injected downstream by `SummaryService`). |
 

@@ -71,7 +71,7 @@ echo "OPENAI_API_KEY=sk-..." > .env
 docker compose up
 ```
 
-The container re-ingests data on every startup (~10 seconds), then serves the application at `http://localhost:8000`.
+On first startup the container ingests data into ChromaDB (~10 seconds). Subsequent starts skip ingest if data already exists, then serve the application at `http://localhost:8000`.
 
 ### Local development
 
@@ -128,7 +128,7 @@ data/
   products.json         # 14 product records
 scripts/
   ingest.py           # ingestion entry point
-  start.sh            # container entrypoint (always passes --reset)
+  start.sh            # container entrypoint (ingests on first start; subsequent starts are no-ops)
   deploy.ps1          # deploy to Azure Container Apps
   setup_auth.ps1      # enable Easy Auth on deployed app
   validate_data.py    # validate data/*.json integrity
@@ -148,7 +148,7 @@ Two PowerShell scripts handle deployment to Azure Container Apps:
 $env:OPENAI_API_KEY = "sk-..."
 .\scripts\deploy.ps1
 
-# Enable Easy Auth (run once after first deploy — creates Entra app registration)
+# Enable Easy Auth (idempotent — reuses existing Entra app registration on re-run)
 .\scripts\setup_auth.ps1
 ```
 
