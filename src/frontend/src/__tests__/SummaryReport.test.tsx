@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SummaryReport } from '../components/SummaryReport'
 import type { SummaryReportData } from '../components/SummaryReport'
@@ -28,23 +28,29 @@ const governanceGap: import('../components/SummaryReport').GovernanceGap = {
   recommended_action: 'Define retention schedule',
 }
 
-describe('SummaryReport — health badge', () => {
-  it('renders "Healthy" badge with green colour class', () => {
-    render(<SummaryReport report={{ ...baseReport, overall_health: 'Healthy' }} />)
-    const badge = screen.getByText('Healthy')
-    expect(badge.className).toMatch(/green/)
+describe('SummaryReport — risk rating pills', () => {
+  it('Critical risk rating renders with a red pill', () => {
+    const finding = { ...riskFinding, risk_rating: 'Critical' }
+    render(<SummaryReport report={{ ...baseReport, critical_risks: [finding] }} />)
+    const table = screen.getByRole('table')
+    const pill = within(table).getByText('Critical')
+    expect(pill.className).toMatch(/red/)
   })
 
-  it('renders "At Risk" badge with amber colour class', () => {
-    render(<SummaryReport report={{ ...baseReport, overall_health: 'At Risk' }} />)
-    const badge = screen.getByText('At Risk')
-    expect(badge.className).toMatch(/amber/)
+  it('High risk rating renders with an orange pill', () => {
+    const finding = { ...riskFinding, risk_rating: 'High' }
+    render(<SummaryReport report={{ ...baseReport, critical_risks: [finding] }} />)
+    const table = screen.getByRole('table')
+    const pill = within(table).getByText('High')
+    expect(pill.className).toMatch(/orange/)
   })
 
-  it('renders "Critical" badge with red colour class', () => {
-    render(<SummaryReport report={{ ...baseReport, overall_health: 'Critical' }} />)
-    const badge = screen.getByText('Critical')
-    expect(badge.className).toMatch(/red/)
+  it('Medium risk rating renders with a yellow pill', () => {
+    const finding = { ...riskFinding, risk_rating: 'Medium' }
+    render(<SummaryReport report={{ ...baseReport, critical_risks: [finding] }} />)
+    const table = screen.getByRole('table')
+    const pill = within(table).getByText('Medium')
+    expect(pill.className).toMatch(/yellow/)
   })
 })
 
@@ -52,9 +58,9 @@ describe('SummaryReport — critical risks table', () => {
   it('renders a row for each risk finding', () => {
     const second = { ...riskFinding, application: 'ForecastTool', priority: 'High' }
     render(<SummaryReport report={{ ...baseReport, critical_risks: [riskFinding, second] }} />)
-
-    expect(screen.getByText('AuthService')).toBeInTheDocument()
-    expect(screen.getByText('ForecastTool')).toBeInTheDocument()
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('AuthService')).toBeInTheDocument()
+    expect(within(table).getByText('ForecastTool')).toBeInTheDocument()
   })
 
   it('renders rows sorted by descending revenue_at_risk_000s', () => {
@@ -90,7 +96,7 @@ describe('SummaryReport — expandable product breakdown', () => {
     }
     const user = userEvent.setup()
     render(<SummaryReport report={{ ...baseReport, critical_risks: [finding] }} />)
-    await user.click(screen.getByText('AuthService'))
+    await user.click(within(screen.getByRole('table')).getByText('AuthService'))
     expect(screen.getByText('TechnologyAdoption')).toBeInTheDocument()
     expect(screen.getByText('CorporateReporting')).toBeInTheDocument()
     const cells = screen.getAllByText(/\$\d+k/)
@@ -107,10 +113,43 @@ describe('SummaryReport — expandable product breakdown', () => {
     }
     const user = userEvent.setup()
     render(<SummaryReport report={{ ...baseReport, critical_risks: [finding] }} />)
-    await user.click(screen.getByText('AuthService'))
+    const table = screen.getByRole('table')
+    await user.click(within(table).getByText('AuthService'))
     expect(screen.getByText('TechnologyAdoption')).toBeInTheDocument()
-    await user.click(screen.getByText('AuthService'))
+    await user.click(within(table).getByText('AuthService'))
     expect(screen.queryByText('TechnologyAdoption')).not.toBeInTheDocument()
+  })
+})
+
+describe('SummaryReport — mobile card layout', () => {
+  it('renders one card per risk finding in the mobile card list', () => {
+    const second = { ...riskFinding, application: 'ForecastTool', priority: 'High' }
+    render(<SummaryReport report={{ ...baseReport, critical_risks: [riskFinding, second] }} />)
+    const cards = screen.getByTestId('risk-cards')
+    expect(cards.querySelectorAll('[data-testid="risk-card"]')).toHaveLength(2)
+  })
+
+  it('each card shows application, risk rating, issue, ARR at risk, and recommended action', () => {
+    render(<SummaryReport report={{ ...baseReport, critical_risks: [riskFinding] }} />)
+    const card = screen.getByTestId('risk-card')
+    expect(within(card).getByText('AuthService')).toBeInTheDocument()
+    expect(within(card).getByText('Critical')).toBeInTheDocument()
+    expect(within(card).getByText('No DR plan')).toBeInTheDocument()
+    expect(within(card).getByText('$1,200k')).toBeInTheDocument()
+    expect(within(card).getByText('Implement DR runbook')).toBeInTheDocument()
+  })
+
+  it('tapping the ARR row on a card with exposures reveals the product breakdown', async () => {
+    const finding = {
+      ...riskFinding,
+      product_exposures: [{ product: 'TechnologyAdoption', arr_000s: 3300 }],
+    }
+    const user = userEvent.setup()
+    render(<SummaryReport report={{ ...baseReport, critical_risks: [finding] }} />)
+    const card = screen.getByTestId('risk-card')
+    expect(within(card).queryByText('TechnologyAdoption')).not.toBeInTheDocument()
+    await user.click(within(card).getByText('$1,200k'))
+    expect(within(card).getByText('TechnologyAdoption')).toBeInTheDocument()
   })
 })
 
