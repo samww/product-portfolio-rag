@@ -13,6 +13,8 @@ docs/background/
 chroma_data/
 .chroma/
 src/api/static/
+static/*
+!static/.gitkeep
 node_modules/
 
 # Distribution / packaging
