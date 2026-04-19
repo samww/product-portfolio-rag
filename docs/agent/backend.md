@@ -73,5 +73,5 @@ Structured output models (`SummaryReport`, `RiskFinding`, `GovernanceGap`) live 
 
 ## See also
 
-- [Architecture Decision Records](decisions.md) — why ChromaDB, denormalised product docs, no chunking, text-embedding-3-small
+- [Architecture Decision Records](../overview/decisions.md) — why ChromaDB, denormalised product docs, no chunking, text-embedding-3-small
 - [API reference](api.md) — endpoint signatures, response shapes, SSE format

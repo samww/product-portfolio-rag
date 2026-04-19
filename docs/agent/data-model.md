@@ -70,4 +70,4 @@ Intentionally designed into the data — these drive the demo queries and the `/
 
 ## See also
 
-- [Dependency graphs](dependencies.md) — Mermaid diagrams for all app-to-app and per-product dependencies
+- [Dependency graphs](../overview/dependencies.md) — Mermaid diagrams for all app-to-app and per-product dependencies
