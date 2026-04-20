@@ -47,7 +47,13 @@
       "Bash(git commit *)",
       "Bash(gh issue *)",
       "Read(//tmp/**)",
-      "Read(//c/Users/sam_w/AppData/Local/Temp/**)"
+      "Read(//c/Users/sam_w/AppData/Local/Temp/**)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(npx tsc *)",
+      "Bash(git -C \"E:/Production/product-portfolio-rag\" status)",
+      "Bash(git -C \"E:/Production/product-portfolio-rag\" diff --stat)",
+      "Bash(git *)"
     ]
   }
 }
