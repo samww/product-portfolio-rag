@@ -6,11 +6,13 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
 
 import chromadb
+import numpy as np
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -24,6 +26,9 @@ from src.ingest.loader import load_applications, load_products
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 COLLECTION_NAME = "portfolio"
+CHROMA_DIR = Path(__file__).parent.parent / ".chroma"
+PCA_NPZ_PATH = CHROMA_DIR / "pca.npz"
+POINTS_JSON_PATH = Path(__file__).parent.parent / "src" / "frontend" / "public" / "points.json"
 
 
 def build_embed_fn(openai_client: OpenAI):
@@ -50,6 +55,8 @@ def main(reset: bool = False) -> None:
     if reset and collection.count() > 0:
         chroma_client.delete_collection(COLLECTION_NAME)
         collection = chroma_client.create_collection(COLLECTION_NAME)
+        PCA_NPZ_PATH.unlink(missing_ok=True)
+        POINTS_JSON_PATH.unlink(missing_ok=True)
         print("Collection reset.")
 
     openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -70,6 +77,8 @@ def main(reset: bool = False) -> None:
             "risk_rating": app.risk_rating,
             "status": app.status,
             "owner": app.owner,
+            "name": app.name,
+            "summary": app.notes,
         })
         ids.append(f"app-{app.name.lower().replace(' ', '-')}")
 
@@ -81,11 +90,22 @@ def main(reset: bool = False) -> None:
             "risk_rating": ep.highest_risk,
             "status": "Active",
             "owner": "",
+            "name": ep.product.name,
+            "summary": ep.product.description,
         })
         ids.append(f"product-{ep.product.name.lower().replace(' ', '-')}")
 
-    index_documents(docs, metadatas, ids, collection, embed)
+    artifact = index_documents(docs, metadatas, ids, collection, embed)
+
+    CHROMA_DIR.mkdir(exist_ok=True)
+    np.savez(PCA_NPZ_PATH, mean=artifact.mean, components=artifact.components)
+
+    POINTS_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+    POINTS_JSON_PATH.write_text(json.dumps(artifact.points, indent=2))
+
     print(f"Indexed {collection.count()} documents into '{COLLECTION_NAME}'.")
+    print(f"PCA artifact written to {PCA_NPZ_PATH}")
+    print(f"Points written to {POINTS_JSON_PATH}")
 
 
 if __name__ == "__main__":

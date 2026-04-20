@@ -9,6 +9,7 @@ from src.ingest.loader import load_applications, load_products, Application, Pro
 from src.ingest.joiner import enrich_products, compute_app_arr_at_risk, compute_app_product_exposures, EnrichedProduct
 from src.ingest.chunker import chunk_application, chunk_product
 from src.ingest.indexer import index_documents
+from src.ingest.pca import PcaArtifact
 
 
 # ---------------------------------------------------------------------------
@@ -241,7 +242,8 @@ def test_chunk_application_no_named_owner_flag_when_owner_empty(sample_apps_path
 def test_index_documents_stores_metadata_fields(chroma_collection, stub_embed):
     docs = ["Application: AuthService\nRisk: Critical"]
     metadatas = [{"doc_type": "application", "division": "Platform Engineering",
-                  "risk_rating": "Critical", "status": "Active", "owner": "Platform Engineering"}]
+                  "risk_rating": "Critical", "status": "Active", "owner": "Platform Engineering",
+                  "name": "AuthService", "summary": ""}]
     ids = ["app-authservice"]
     index_documents(docs, metadatas, ids, chroma_collection, stub_embed)
     result = chroma_collection.get(ids=["app-authservice"], include=["metadatas"])
@@ -256,8 +258,71 @@ def test_index_documents_stores_metadata_fields(chroma_collection, stub_embed):
 
 def test_index_documents_stores_correct_count(chroma_collection, stub_embed):
     docs = [f"doc {i}" for i in range(5)]
-    metadatas = [{"doc_type": "application", "division": "X",
-                  "risk_rating": "Low", "status": "Active", "owner": "X"} for _ in docs]
+    metadatas = [{"doc_type": "application", "division": "X", "risk_rating": "Low",
+                  "status": "Active", "owner": "X", "name": f"App{i}", "summary": ""} for i in range(5)]
     ids = [f"id-{i}" for i in range(5)]
     index_documents(docs, metadatas, ids, chroma_collection, stub_embed)
     assert chroma_collection.count() == 5
+
+
+# ---------------------------------------------------------------------------
+# Cycle 12: index_documents returns a PcaArtifact
+# ---------------------------------------------------------------------------
+
+def test_index_documents_returns_pca_artifact(chroma_collection, stub_embed):
+    docs = [f"doc {i}" for i in range(5)]
+    metadatas = [{"doc_type": "application", "division": "X", "risk_rating": "Low",
+                  "status": "Active", "owner": "X", "name": f"App{i}", "summary": ""} for i in range(5)]
+    ids = [f"id-{i}" for i in range(5)]
+    artifact = index_documents(docs, metadatas, ids, chroma_collection, stub_embed)
+    assert isinstance(artifact, PcaArtifact)
+
+
+def test_index_documents_artifact_has_correct_point_count(chroma_collection, stub_embed):
+    docs = [f"doc {i}" for i in range(5)]
+    metadatas = [{"doc_type": "application", "division": "X", "risk_rating": "Low",
+                  "status": "Active", "owner": "X", "name": f"App{i}", "summary": ""} for i in range(5)]
+    ids = [f"id-{i}" for i in range(5)]
+    artifact = index_documents(docs, metadatas, ids, chroma_collection, stub_embed)
+    assert len(artifact.points) == 5
+
+
+# ---------------------------------------------------------------------------
+# Cycle 13: artifact files round-trip (write pca.npz and points.json, reload)
+# ---------------------------------------------------------------------------
+
+import json
+import numpy as np
+
+
+def test_pca_npz_roundtrip(chroma_collection, stub_embed, tmp_path):
+    docs = [f"doc {i}" for i in range(5)]
+    metadatas = [{"doc_type": "application", "division": "X", "risk_rating": "Low",
+                  "status": "Active", "owner": "X", "name": f"App{i}", "summary": ""} for i in range(5)]
+    ids = [f"id-{i}" for i in range(5)]
+    artifact = index_documents(docs, metadatas, ids, chroma_collection, stub_embed)
+
+    npz_path = tmp_path / "pca.npz"
+    np.savez(npz_path, mean=artifact.mean, components=artifact.components)
+
+    loaded = np.load(npz_path)
+    np.testing.assert_array_equal(loaded["mean"], artifact.mean)
+    np.testing.assert_array_equal(loaded["components"], artifact.components)
+
+
+def test_points_json_roundtrip(chroma_collection, stub_embed, tmp_path):
+    docs = [f"doc {i}" for i in range(5)]
+    metadatas = [{"doc_type": "application", "division": "X", "risk_rating": "Low",
+                  "status": "Active", "owner": "X", "name": f"App{i}", "summary": ""} for i in range(5)]
+    ids = [f"id-{i}" for i in range(5)]
+    artifact = index_documents(docs, metadatas, ids, chroma_collection, stub_embed)
+
+    points_path = tmp_path / "points.json"
+    points_path.write_text(json.dumps(artifact.points))
+
+    loaded = json.loads(points_path.read_text())
+    assert len(loaded) == 5
+    for point in loaded:
+        for field in ("id", "doc_type", "division", "name", "summary", "risk_rating", "projected_xyz"):
+            assert field in point
+        assert len(point["projected_xyz"]) == 3

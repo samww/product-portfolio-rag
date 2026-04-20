@@ -13,6 +13,7 @@ docs/background/
 chroma_data/
 .chroma/
 src/api/static/
+src/frontend/public/points.json
 static/*
 !static/.gitkeep
 node_modules/

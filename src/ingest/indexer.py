@@ -4,6 +4,8 @@ from typing import Callable
 
 import chromadb
 
+from src.ingest.pca import PcaArtifact, fit
+
 
 def index_documents(
     documents: list[str],
@@ -11,15 +13,10 @@ def index_documents(
     ids: list[str],
     collection: chromadb.Collection,
     embed: Callable[[list[str]], list[list[float]]],
-) -> None:
-    """Embed documents and upsert them into the ChromaDB collection.
+) -> PcaArtifact:
+    """Embed documents, upsert into ChromaDB, fit PCA, and return the artifact.
 
-    Args:
-        documents: Text content for each document.
-        metadatas: Metadata dicts (must include doc_type, division, risk_rating, status, owner).
-        ids: Unique identifiers for each document.
-        collection: ChromaDB collection to write into.
-        embed: Callable that accepts a list of strings and returns a list of embedding vectors.
+    metadatas must include: doc_type, division, risk_rating, status, owner, name, summary.
     """
     embeddings = embed(documents)
     collection.upsert(
@@ -28,3 +25,4 @@ def index_documents(
         metadatas=metadatas,
         ids=ids,
     )
+    return fit(embeddings, ids, metadatas)
