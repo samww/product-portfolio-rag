@@ -79,6 +79,7 @@ def main(reset: bool = False) -> None:
             "owner": app.owner,
             "name": app.name,
             "summary": app.notes,
+            "cost_000s": app.annual_cost_total,
         })
         ids.append(f"app-{app.name.lower().replace(' ', '-')}")
 
@@ -92,6 +93,7 @@ def main(reset: bool = False) -> None:
             "owner": "",
             "name": ep.product.name,
             "summary": ep.product.description,
+            "arr_000s": ep.product.arr,
         })
         ids.append(f"product-{ep.product.name.lower().replace(' ', '-')}")
 

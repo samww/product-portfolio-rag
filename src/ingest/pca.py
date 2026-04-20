@@ -37,6 +37,8 @@ def fit(
             "name": metadatas[i].get("name", ""),
             "summary": metadatas[i].get("summary", ""),
             "risk_rating": metadatas[i].get("risk_rating", ""),
+            "cost_000s": metadatas[i].get("cost_000s", 0),
+            "arr_000s": metadatas[i].get("arr_000s", 0),
             "projected_xyz": projected[i].tolist(),
         }
         for i in range(len(ids))

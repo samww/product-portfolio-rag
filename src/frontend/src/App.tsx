@@ -1,7 +1,10 @@
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { HomePage } from './pages/HomePage'
 import { SummaryPage } from './pages/SummaryPage'
+
+const EmbeddingsPage = lazy(() => import('./pages/EmbeddingsPage'))
 
 export const routes = [
   {
@@ -9,7 +12,14 @@ export const routes = [
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/summary', element: <SummaryPage /> },
-      { path: '/embeddings', element: <div className="max-w-4xl mx-auto px-6 py-12"><p className="text-slate-400">Coming soon.</p></div> },
+      {
+        path: '/embeddings',
+        element: (
+          <Suspense fallback={<div className="flex items-center justify-center h-64 text-slate-400 text-sm">Loading…</div>}>
+            <EmbeddingsPage />
+          </Suspense>
+        ),
+      },
     ],
   },
 ]
