@@ -61,6 +61,24 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+describe('EmbeddingsPage projection fetch', () => {
+  it('sends top_k=8 when posting to /embeddings/project', async () => {
+    const points = [makePoint('app1')]
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(points) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app1'] }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPage('?q=risk')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    const projectCall = fetchMock.mock.calls.find(([url]: [string]) => url === '/embeddings/project')
+    expect(projectCall).toBeDefined()
+    const body = JSON.parse(projectCall[1].body)
+    expect(body.top_k).toBe(8)
+  })
+})
+
 describe('EmbeddingsPage teaching panel', () => {
   it('does not render a "Risk halo" section', async () => {
     renderPage()

@@ -291,7 +291,7 @@ export default function EmbeddingsPage() {
     fetch('/embeddings/project', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, top_k: 5 }),
+      body: JSON.stringify({ query: q, top_k: 8 }),
     })
       .then((r) => r.json())
       .then(({ projected_xyz, top_k_ids }: { projected_xyz: [number, number, number]; top_k_ids: string[] }) => {
@@ -344,6 +344,10 @@ export default function EmbeddingsPage() {
               semantic content; distance in this chart reflects semantic distance in the original
               embedding space.
             </p>
+            <p className="leading-relaxed text-slate-500 text-xs mt-2">
+              Visual proximity is approximate. Top-k retrieval uses full 1 536-dim cosine similarity,
+              so a point that looks close in 3D may not be retrieved — and vice versa.
+            </p>
           </div>
 
           <div>
@@ -375,7 +379,7 @@ export default function EmbeddingsPage() {
               <h3 className="text-slate-200 font-medium mb-1.5">Query</h3>
               <div className="flex items-center gap-2 text-slate-400">
                 <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: QUERY_COLOR }} />
-                Query point — lines connect the top‑5 matches
+                Query point — lines connect the top‑8 matches
               </div>
             </div>
           )}
