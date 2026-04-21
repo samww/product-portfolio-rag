@@ -3,7 +3,7 @@
 Run with: uv run pytest tests/test_retriever.py -v
 """
 
-from src.rag.retriever import retrieve, retrieve_at_risk_docs, RetrievedDoc, parse_doc_source
+from src.rag.retriever import retrieve, retrieve_by_vector, retrieve_at_risk_docs, RetrievedDoc, parse_doc_source
 
 _APP_META = {"doc_type": "application", "division": "X", "risk_rating": "Low", "status": "Active", "owner": "X"}
 _PRODUCT_META = {"doc_type": "product", "division": "X", "risk_rating": "Low", "status": "Active", "owner": ""}
@@ -191,3 +191,24 @@ def test_parse_doc_source_unknown_prefix():
     kind, name = parse_doc_source(doc)
     assert kind is None
     assert name == "Some other content"
+
+
+# ---------------------------------------------------------------------------
+# Cycle 11: retrieve_by_vector returns same results as retrieve() when the
+# embedding matches what embed() would produce for the same query
+# ---------------------------------------------------------------------------
+
+def test_retrieve_by_vector_matches_retrieve(chroma_collection, stub_embed):
+    docs = ["Application: AuthService\nRisk: Critical", "Product: BrandTracking"]
+    chroma_collection.upsert(
+        documents=docs,
+        embeddings=stub_embed(docs),
+        metadatas=[_APP_META, _PRODUCT_META],
+        ids=["app-auth", "prod-brand"],
+    )
+    query = "critical applications"
+    precomputed = stub_embed([query])[0]
+    by_vector = retrieve_by_vector(precomputed, chroma_collection, top_k=5)
+    by_retrieve = retrieve(query, chroma_collection, stub_embed, top_k=5)
+    assert len(by_vector) == len(by_retrieve)
+    assert [r.document for r in by_vector] == [r.document for r in by_retrieve]

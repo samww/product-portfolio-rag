@@ -2,13 +2,14 @@
 
 import json
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from src.api.models import QueryRequest, QueryResponse
 from src.rag.generator import generate_answer, generate_answer_stream
 from src.rag.models import SummaryReport
-from src.rag.retriever import retrieve, parse_doc_source
+from src.rag.retriever import retrieve, retrieve_by_vector, parse_doc_source
+from src.ingest.pca import project
 
 router = APIRouter()
 
@@ -68,3 +69,13 @@ async def query_stream(query: str, top_k: int = 8, request: Request = None):
         yield f"data: [DONE] {done_payload}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@router.post("/embeddings/project")
+async def embeddings_project(body: QueryRequest, request: Request):
+    if request.app.state.pca_artifact is None:
+        raise HTTPException(status_code=503, detail="PCA artifact not found — run scripts/ingest.py")
+    embedding = request.app.state.embed([body.query])[0]
+    xyz = project(request.app.state.pca_artifact, [embedding])[0].tolist()
+    docs = retrieve_by_vector(embedding, request.app.state.collection, body.top_k)
+    return {"projected_xyz": xyz, "top_k_ids": [doc.id for doc in docs]}

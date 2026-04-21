@@ -1,10 +1,12 @@
 """FastAPI application entry point."""
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import chromadb
+import numpy as np
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +15,7 @@ from openai import OpenAI
 from src.api.routes import router
 from src.ingest.joiner import compute_app_product_exposures, enrich_products
 from src.ingest.loader import load_applications, load_products
+from src.ingest.pca import PcaArtifact
 from src.rag.generator import generate_summary
 from src.rag.summary.adapters import ChromaAtRiskSource, DictExposureLookup
 from src.rag.summary.service import SummaryService
@@ -47,6 +50,13 @@ async def lifespan(app: FastAPI):
         analyst=lambda docs: generate_summary(list(docs), openai_client),
         exposures=DictExposureLookup(compute_app_product_exposures(enriched)),
     )
+    pca_path = Path(".chroma/pca.npz")
+    try:
+        data = np.load(pca_path)
+        app.state.pca_artifact = PcaArtifact(mean=data["mean"], components=data["components"])
+    except Exception:
+        logging.warning("PCA artifact not found — run scripts/ingest.py")
+        app.state.pca_artifact = None
     yield
 
 

@@ -11,6 +11,7 @@ class RetrievedDoc:
     document: str
     metadata: dict
     distance: float
+    id: str = ""
 
 
 def parse_doc_source(doc: "RetrievedDoc") -> tuple[str | None, str]:
@@ -43,11 +44,12 @@ def _query_where(
         include=["documents", "metadatas", "distances"],
     )
     return [
-        RetrievedDoc(document=doc, metadata=meta, distance=dist)
-        for doc, meta, dist in zip(
+        RetrievedDoc(document=doc, metadata=meta, distance=dist, id=doc_id)
+        for doc, meta, dist, doc_id in zip(
             results["documents"][0],
             results["metadatas"][0],
             results["distances"][0],
+            results["ids"][0],
         )
     ]
 
@@ -78,16 +80,24 @@ def retrieve_at_risk_docs(collection: chromadb.Collection) -> list[RetrievedDoc]
     return results
 
 
+def retrieve_by_vector(
+    query_embedding: list[float],
+    collection: chromadb.Collection,
+    top_k: int = 8,
+) -> list[RetrievedDoc]:
+    """Return top_k applications + top_k products sorted by distance for a pre-computed embedding."""
+    app_docs = _query_where(query_embedding, collection, top_k, {"doc_type": "application"})
+    product_docs = _query_where(query_embedding, collection, top_k, {"doc_type": "product"})
+    combined = app_docs + product_docs
+    combined.sort(key=lambda d: d.distance)
+    return combined
+
+
 def retrieve(
     query: str,
     collection: chromadb.Collection,
     embed: Callable[[list[str]], list[list[float]]],
     top_k: int = 8,
 ) -> list[RetrievedDoc]:
-    """Embed query and return top_k applications + top_k products, sorted by distance."""
-    query_embedding = embed([query])[0]
-    app_docs = _query_where(query_embedding, collection, top_k, {"doc_type": "application"})
-    product_docs = _query_where(query_embedding, collection, top_k, {"doc_type": "product"})
-    combined = app_docs + product_docs
-    combined.sort(key=lambda d: d.distance)
-    return combined
+    """Embed query and delegate to retrieve_by_vector."""
+    return retrieve_by_vector(embed([query])[0], collection, top_k)

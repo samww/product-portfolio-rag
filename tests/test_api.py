@@ -299,6 +299,78 @@ def test_get_assets_serves_static_files():
     assert response.status_code == 200
 
 
+# ---------------------------------------------------------------------------
+# Cycle 16: POST /embeddings/project returns 503 when pca_artifact is None
+# ---------------------------------------------------------------------------
+
+def test_embeddings_project_503_when_pca_missing(chroma_collection, stub_embed):
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = chroma_collection
+    test_app.state.embed = stub_embed
+    test_app.state.pca_artifact = None
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.post("/embeddings/project", json={"query": "test"})
+    assert response.status_code == 503
+    assert response.json()["detail"] == "PCA artifact not found — run scripts/ingest.py"
+
+
+# ---------------------------------------------------------------------------
+# Cycle 17: POST /embeddings/project returns {projected_xyz, top_k_ids} on success
+# ---------------------------------------------------------------------------
+
+def _stub_pca_artifact():
+    """PcaArtifact with 8-dim mean/components matching the stub_embed dimension."""
+    import numpy as np
+    from src.ingest.pca import PcaArtifact
+    mean = np.zeros(8)
+    components = np.eye(3, 8)
+    return PcaArtifact(mean=mean, components=components)
+
+
+def test_embeddings_project_returns_projected_xyz_and_top_k_ids(chroma_collection, stub_embed):
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = chroma_collection
+    test_app.state.embed = stub_embed
+    test_app.state.pca_artifact = _stub_pca_artifact()
+    doc = "Application: AuthService\nRisk: Critical"
+    chroma_collection.upsert(
+        documents=[doc],
+        embeddings=stub_embed([doc]),
+        metadatas=[{"doc_type": "application", "division": "X",
+                    "risk_rating": "Critical", "status": "Active", "owner": "X"}],
+        ids=["app-authservice"],
+    )
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.post("/embeddings/project", json={"query": "critical"})
+    assert response.status_code == 200
+    body = response.json()
+    assert "projected_xyz" in body
+    assert "top_k_ids" in body
+    assert len(body["projected_xyz"]) == 3
+    assert isinstance(body["top_k_ids"], list)
+    assert all(isinstance(i, str) for i in body["top_k_ids"])
+    assert "app-authservice" in body["top_k_ids"]
+
+
+# ---------------------------------------------------------------------------
+# Cycle 18: embed is called exactly once per /embeddings/project request
+# ---------------------------------------------------------------------------
+
+def test_embeddings_project_calls_embed_exactly_once(chroma_collection, stub_embed):
+    from unittest.mock import MagicMock
+    embed_mock = MagicMock(wraps=stub_embed)
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = chroma_collection
+    test_app.state.embed = embed_mock
+    test_app.state.pca_artifact = _stub_pca_artifact()
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        c.post("/embeddings/project", json={"query": "test query"})
+    assert embed_mock.call_count == 1
+
+
 def test_stream_done_event_contains_sources_context_query(chroma_collection, stub_embed):
     test_app = FastAPI()
     test_app.include_router(router)
