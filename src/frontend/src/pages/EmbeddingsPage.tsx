@@ -17,10 +17,6 @@ interface EmbeddingPoint {
   projected_xyz: [number, number, number]
 }
 
-interface TooltipInfo {
-  point: EmbeddingPoint
-  screenPos: [number, number]
-}
 
 function GradientBackground() {
   const { scene } = useThree()
