@@ -1,3 +1,35 @@
+export interface EmbeddingPoint {
+  id: string
+  doc_type: string
+  division: string
+  name: string
+  summary: string
+  risk_rating: string
+  cost_000s: number
+  arr_000s: number
+  projected_xyz: [number, number, number]
+}
+
+export interface EmbeddingPointWithTopK extends EmbeddingPoint {
+  topK: boolean
+}
+
+export function mergeTopKIntoPoints(
+  points: EmbeddingPoint[],
+  topKIds: string[]
+): EmbeddingPointWithTopK[] {
+  const idSet = new Set(topKIds)
+  return points.map(p => ({ ...p, topK: idSet.has(p.id) }))
+}
+
+export function buildIsolationFilter(
+  selectedId: string | null,
+  _points: EmbeddingPointWithTopK[]
+): (p: EmbeddingPointWithTopK) => boolean {
+  if (selectedId === null) return () => true
+  return (p) => p.id === selectedId || p.topK
+}
+
 const DIVISION_COLORS: Record<string, string> = {
   Analytics: '#6366f1',
   'Client Services': '#10b981',
@@ -26,6 +58,3 @@ export function pointToSize(_doc_type: string, value: number): number {
   return MIN_SIZE + t * (MAX_SIZE - MIN_SIZE)
 }
 
-export function riskToHalo(risk_rating: string): boolean {
-  return risk_rating === 'High' || risk_rating === 'Critical'
-}

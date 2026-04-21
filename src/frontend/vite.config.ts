@@ -14,6 +14,7 @@ export default defineConfig({
       '/query': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
       '/summarise': 'http://localhost:8000',
+      '/embeddings': 'http://localhost:8000',
     },
   },
   test: {

@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { divisionToColor, docTypeToShape, riskToHalo, pointToSize } from '../pages/EmbeddingsPage.utils'
+import { divisionToColor, docTypeToShape, pointToSize, mergeTopKIntoPoints, buildIsolationFilter } from '../pages/EmbeddingsPage.utils'
+import type { EmbeddingPoint, EmbeddingPointWithTopK } from '../pages/EmbeddingsPage.utils'
+
+const makePoint = (id: string): EmbeddingPoint => ({
+  id,
+  doc_type: 'application',
+  division: 'Finance',
+  name: 'Test App',
+  summary: 'Summary',
+  risk_rating: 'Low',
+  cost_000s: 1000,
+  arr_000s: 0,
+  projected_xyz: [0, 0, 0],
+})
 
 describe('divisionToColor', () => {
   it('returns a hex string for a known division', () => {
@@ -47,20 +60,54 @@ describe('pointToSize', () => {
   })
 })
 
-describe('riskToHalo', () => {
-  it('returns true for High risk', () => {
-    expect(riskToHalo('High')).toBe(true)
+describe('mergeTopKIntoPoints', () => {
+  it('marks points whose IDs are in topKIds as topK true', () => {
+    const points = [makePoint('a'), makePoint('b'), makePoint('c')]
+    const result = mergeTopKIntoPoints(points, ['a', 'c'])
+    expect(result.find(p => p.id === 'a')?.topK).toBe(true)
+    expect(result.find(p => p.id === 'c')?.topK).toBe(true)
   })
 
-  it('returns true for Critical risk', () => {
-    expect(riskToHalo('Critical')).toBe(true)
+  it('marks points not in topKIds as topK false', () => {
+    const points = [makePoint('a'), makePoint('b')]
+    const result = mergeTopKIntoPoints(points, ['a'])
+    expect(result.find(p => p.id === 'b')?.topK).toBe(false)
   })
 
-  it('returns false for Medium risk', () => {
-    expect(riskToHalo('Medium')).toBe(false)
-  })
-
-  it('returns false for Low risk', () => {
-    expect(riskToHalo('Low')).toBe(false)
+  it('marks all points as topK false when topKIds is empty', () => {
+    const points = [makePoint('x'), makePoint('y')]
+    const result = mergeTopKIntoPoints(points, [])
+    expect(result.every(p => p.topK === false)).toBe(true)
   })
 })
+
+describe('buildIsolationFilter', () => {
+  const pts: EmbeddingPointWithTopK[] = [
+    { ...makePoint('a'), topK: true },
+    { ...makePoint('b'), topK: false },
+    { ...makePoint('c'), topK: true },
+  ]
+
+  it('passes all points when selectedId is null', () => {
+    const filter = buildIsolationFilter(null, pts)
+    expect(pts.every(filter)).toBe(true)
+  })
+
+  it('passes only the selected point and topK points when selectedId is set', () => {
+    const filter = buildIsolationFilter('b', pts)
+    expect(filter(pts[0])).toBe(true)   // a — topK
+    expect(filter(pts[1])).toBe(true)   // b — selected
+    expect(filter(pts[2])).toBe(true)   // c — topK
+  })
+
+  it('fails non-topK non-selected points when selectedId is set', () => {
+    const ptsWithNonTopK: EmbeddingPointWithTopK[] = [
+      { ...makePoint('a'), topK: false },
+      { ...makePoint('b'), topK: false },
+    ]
+    const filter = buildIsolationFilter('a', ptsWithNonTopK)
+    expect(filter(ptsWithNonTopK[0])).toBe(true)   // a — selected
+    expect(filter(ptsWithNonTopK[1])).toBe(false)  // b — not selected, not topK
+  })
+})
+
