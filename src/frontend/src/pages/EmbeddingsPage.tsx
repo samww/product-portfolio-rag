@@ -376,15 +376,15 @@ export default function EmbeddingsPage() {
   const divisions = [...new Set(rawPoints.map((p) => p.division))].sort()
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col lg:h-full lg:overflow-hidden">
       {/* Query bar */}
       <div className="px-4 pt-4 pb-2 flex-shrink-0">
         <EmbeddingsQueryBar onAsk={handleAsk} answer={answer} isStreaming={isStreaming} />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 px-4 pb-4 flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-col lg:flex-row gap-4 px-4 pb-4 lg:flex-1 lg:overflow-hidden lg:min-h-0">
         {/* 3D canvas */}
-        <div className="flex-1 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 relative min-h-[400px]">
+        <div className="h-[60vh] lg:h-auto lg:flex-1 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 relative">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
               Loading embeddings…

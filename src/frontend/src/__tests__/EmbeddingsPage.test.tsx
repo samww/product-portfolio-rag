@@ -61,6 +61,34 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+describe('EmbeddingsPage mobile scrollability', () => {
+  it('page root does not carry bare overflow-hidden (would lock mobile scroll)', () => {
+    const { container } = renderPage()
+    const root = container.firstChild as HTMLElement
+    expect(root.className.split(' ')).not.toContain('overflow-hidden')
+  })
+
+  it('canvas container has an explicit viewport-relative height (not only min-height) so r3f height:100% resolves', () => {
+    const { container } = renderPage()
+    const root = container.firstChild as HTMLElement
+    const inner = root.children[1] as HTMLElement
+    const canvasContainer = inner.children[0] as HTMLElement
+    const classes = canvasContainer.className.split(' ')
+    // Must be an explicit h-[…vh] class, not just min-h-[…vh].
+    // Without an explicit height the CSS containing block is "auto" and
+    // r3f's internal <canvas height:100%> resolves to ~0px.
+    expect(classes.some(cls => /^h-\[.*vh\]$/.test(cls))).toBe(true)
+  })
+
+  it('inner layout container does not carry bare overflow-hidden', () => {
+    const { container } = renderPage()
+    const root = container.firstChild as HTMLElement
+    // second child of root is the flex row/col that wraps canvas + teaching panel
+    const inner = root.children[1] as HTMLElement
+    expect(inner.className.split(' ')).not.toContain('overflow-hidden')
+  })
+})
+
 describe('EmbeddingsPage projection fetch', () => {
   it('sends top_k=8 when posting to /embeddings/project', async () => {
     const points = [makePoint('app1')]
