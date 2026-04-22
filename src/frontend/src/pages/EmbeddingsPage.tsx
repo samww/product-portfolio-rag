@@ -118,14 +118,15 @@ function QueryPoint({ xyz }: { xyz: [number, number, number] }) {
   )
 }
 
-function Scene({ points, queryXyz }: {
+function Scene({ points, queryXyz, pinned, onPin }: {
   points: EmbeddingPointWithTopK[]
   queryXyz: [number, number, number] | null
+  pinned: EmbeddingPoint | null
+  onPin: React.Dispatch<React.SetStateAction<EmbeddingPoint | null>>
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null)
   const [hovered, setHovered] = useState<EmbeddingPoint | null>(null)
-  const [pinned, setPinned] = useState<EmbeddingPoint | null>(null)
 
   const tooltip = pinned ?? hovered
 
@@ -137,22 +138,13 @@ function Scene({ points, queryXyz }: {
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 10, 5]} intensity={0.8} />
 
-      <mesh
-        visible={false}
-        scale={100}
-        onClick={() => setPinned(null)}
-      >
-        <sphereGeometry args={[1]} />
-        <meshBasicMaterial />
-      </mesh>
-
       {points.map((p) => (
         <Point
           key={p.id}
           data={p}
           onHover={setHovered}
           onUnhover={() => setHovered(null)}
-          onClick={(pt) => setPinned(prev => prev?.id === pt.id ? null : pt)}
+          onClick={(pt) => onPin(prev => prev?.id === pt.id ? null : pt)}
         />
       ))}
 
@@ -321,6 +313,7 @@ export default function EmbeddingsPage() {
   const [answer, setAnswer] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [citedIds, setCitedIds] = useState<string[]>([])
+  const [pinned, setPinned] = useState<EmbeddingPoint | null>(null)
   const esRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
@@ -415,9 +408,9 @@ export default function EmbeddingsPage() {
             </div>
           )}
           {!loading && !error && (
-            <Canvas camera={{ position: [0, 0, 3], fov: 60 }}>
+            <Canvas camera={{ position: [0, 0, 3], fov: 60 }} onPointerMissed={() => setPinned(null)}>
               <Suspense fallback={null}>
-                <Scene points={points} queryXyz={queryXyz} />
+                <Scene points={points} queryXyz={queryXyz} pinned={pinned} onPin={setPinned} />
               </Suspense>
             </Canvas>
           )}

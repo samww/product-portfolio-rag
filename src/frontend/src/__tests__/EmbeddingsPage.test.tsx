@@ -5,7 +5,12 @@ import React from 'react'
 import EmbeddingsPage from '../pages/EmbeddingsPage'
 
 vi.mock('@react-three/fiber', () => ({
-  Canvas: ({ children }: { children: React.ReactNode }) => <div data-testid="canvas">{children}</div>,
+  Canvas: ({ children, onPointerMissed }: { children: React.ReactNode; onPointerMissed?: () => void }) => (
+    <div data-testid="canvas">
+      {children}
+      <button data-testid="canvas-missed" onClick={onPointerMissed} />
+    </div>
+  ),
   useThree: () => ({
     scene: { background: null },
     camera: { position: { set: vi.fn() }, lookAt: vi.fn(), fov: 60 },
@@ -206,5 +211,31 @@ describe('EmbeddingsPage — streaming answer display', () => {
     await waitFor(() => {
       expect(screen.queryByText('Some answer')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('EmbeddingsPage — onPointerMissed dismisses pinned tooltip', () => {
+  it('clears the pinned tooltip when the canvas fires onPointerMissed', async () => {
+    const points = [makePoint('app1')]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: () => Promise.resolve(points) }))
+
+    const { container } = renderPage()
+
+    // Wait for point data to load (footer appears)
+    await screen.findByText(/records/i)
+
+    // Pin a point by clicking its mesh element
+    const mesh = container.querySelector('mesh')
+    expect(mesh).not.toBeNull()
+    fireEvent.click(mesh!)
+
+    // Tooltip should now be visible
+    expect(screen.getByText('Test App')).toBeInTheDocument()
+
+    // Simulate clicking empty canvas space
+    fireEvent.click(screen.getByTestId('canvas-missed'))
+
+    // Tooltip should be dismissed
+    expect(screen.queryByText('Test App')).not.toBeInTheDocument()
   })
 })
