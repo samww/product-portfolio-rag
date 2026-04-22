@@ -9,7 +9,7 @@ import {
   mergeTopKIntoPoints,
 } from './EmbeddingsPage.utils'
 import type { EmbeddingPoint, EmbeddingPointWithTopK } from './EmbeddingsPage.utils'
-import { QueryChips } from '../components/QueryChips'
+import { GROUPS } from '../components/QueryChips'
 
 const QUERY_COLOR = '#e879f9'
 
@@ -272,6 +272,7 @@ export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps
           placeholder="Type a query to find similar records…"
           value={inputValue}
           onChange={handleChange}
+          onKeyDown={(e) => { if (e.key === 'Enter' && inputValue.trim()) onAsk?.(inputValue) }}
           className="flex-1 rounded-lg bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-500"
         />
         <button
@@ -282,9 +283,27 @@ export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps
           {isStreaming ? 'Asking…' : 'Ask'}
         </button>
       </div>
-      <QueryChips onSelect={handleChipSelect} />
+      <select
+        value=""
+        onChange={(e) => { if (e.target.value) handleChipSelect(e.target.value) }}
+        className="w-full rounded-lg bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-slate-500 cursor-pointer"
+      >
+        <option value="">Suggested queries…</option>
+        {GROUPS.map(({ label, chips }) => (
+          <optgroup key={label} label={label}>
+            {chips.map((q) => (
+              <option key={q} value={q}>{q}</option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
       {answer && (
-        <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{answer}</p>
+        <div
+          data-testid="answer-box"
+          className="max-h-[7.5rem] overflow-y-auto rounded-lg bg-slate-900 border border-slate-700 px-4 py-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"
+        >
+          {answer}
+        </div>
       )}
     </div>
   )

@@ -4,7 +4,7 @@ interface Props {
   onSelect: (query: string) => void
 }
 
-const GROUPS = [
+export const GROUPS = [
   {
     label: 'Risk',
     chips: [

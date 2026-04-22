@@ -36,6 +36,26 @@ describe('EmbeddingsQueryBar — Ask button', () => {
     fireEvent.click(screen.getByRole('button', { name: /ask/i }))
     expect(onAsk).toHaveBeenCalledWith('governance')
   })
+
+  it('pressing Enter on the input calls onAsk when input has content', () => {
+    const onAsk = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/embeddings?q=governance']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar onAsk={onAsk} />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })
+    expect(onAsk).toHaveBeenCalledWith('governance')
+  })
+
+  it('pressing Enter on the input does not call onAsk when input is empty', () => {
+    const onAsk = vi.fn()
+    renderWithRouter()
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' })
+    expect(onAsk).not.toHaveBeenCalled()
+  })
 })
 
 describe('EmbeddingsQueryBar — answer display', () => {
@@ -59,6 +79,33 @@ describe('EmbeddingsQueryBar — answer display', () => {
       </MemoryRouter>
     )
     expect(screen.queryByText('The answer is 42.')).not.toBeInTheDocument()
+  })
+
+  it('renders the answer inside a scrollable container with a max-height constraint', () => {
+    render(
+      <MemoryRouter initialEntries={['/embeddings']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar answer="The answer is 42." />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    const text = screen.getByText('The answer is 42.')
+    const box = text.closest('[data-testid="answer-box"]')
+    expect(box).toBeInTheDocument()
+    expect(box!.className).toMatch(/overflow-y/)
+    expect(box!.className).toMatch(/max-h/)
+  })
+})
+
+describe('EmbeddingsQueryBar — suggested query dropdown', () => {
+  it('renders a select dropdown for suggested queries', () => {
+    renderWithRouter()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
+  })
+
+  it('does not render a "Show suggested queries" toggle', () => {
+    renderWithRouter()
+    expect(screen.queryByText(/show suggested queries/i)).not.toBeInTheDocument()
   })
 })
 
@@ -115,8 +162,7 @@ describe('EmbeddingsQueryBar', () => {
     expect(container.querySelector('[data-testid="search"]')?.textContent).toBe('revenue')
   })
 
-  it('QueryChips onSelect writes to searchParams', () => {
-    vi.useFakeTimers()
+  it('selecting a dropdown option writes to searchParams immediately (no debounce)', () => {
     const { container } = render(
       <MemoryRouter initialEntries={['/embeddings']}>
         <Routes>
@@ -132,15 +178,16 @@ describe('EmbeddingsQueryBar', () => {
         </Routes>
       </MemoryRouter>
     )
-    // Open chips
-    fireEvent.click(screen.getByText(/show suggested queries/i))
-    // Click the first chip
-    const chips = screen.getAllByRole('button').filter(b =>
-      b.className.includes('rounded-full')
-    )
-    fireEvent.click(chips[0])
-    // Chips onSelect should write immediately (no debounce for direct chip select)
-    expect(container.querySelector('[data-testid="search"]')?.textContent).not.toBe('')
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'Which applications have a Critical or High risk rating?' } })
+    expect(container.querySelector('[data-testid="search"]')?.textContent).toBe('Which applications have a Critical or High risk rating?')
+  })
+
+  it('selecting a dropdown option populates the text input', () => {
+    renderWithRouter()
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'Which applications have no named owner?' } })
+    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('Which applications have no named owner?')
   })
 })
 
