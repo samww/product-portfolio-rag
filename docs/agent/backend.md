@@ -66,7 +66,7 @@ Ports-and-adapters package owning the `/summarise` composition. Pure in-process;
 
 | Module | Responsibility |
 |---|---|
-| `main.py` | FastAPI app + lifespan: loads `.env`, creates `OpenAI` client, connects `PersistentClient` at `.chroma/`, loads `data/applications.json` + `data/products.json`, composes a `SummaryService` from `ChromaAtRiskSource`, a `generate_summary` lambda, and `DictExposureLookup(compute_app_product_exposures(enriched))`, attaches client + collection + embed + `summary_service` to `app.state` |
+| `main.py` | FastAPI app + lifespan: loads `.env`, creates `OpenAI` client, connects `PersistentClient` at `.chroma/`, loads `data/applications.json` + `data/products.json`, composes a `SummaryService` from `ChromaAtRiskSource`, a `generate_summary` lambda, and `DictExposureLookup(compute_app_product_exposures(enriched))`, attaches client + collection + embed + `summary_service` to `app.state`. Also loads `PcaArtifact` from `.chroma/pca.npz` into `app.state.pca_artifact` (set to `None` with a warning log if missing). |
 | `routes.py` | Route handlers — access shared resources via `request.app.state`. `/summarise` is a two-line delegate to `request.app.state.summary_service.run()`. |
 | `models.py` | Pydantic request/response models for API layer |
 

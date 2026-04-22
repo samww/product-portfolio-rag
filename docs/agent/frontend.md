@@ -16,7 +16,7 @@ Build output: `npm run build` compiles to `src/api/static/` (consumed by FastAPI
 Layout          ← shared wrapper: Navbar + <Outlet />
   /             → HomePage
   /summary      → SummaryPage
-  /embeddings   → placeholder (slice 3, #26)
+  /embeddings   → EmbeddingsPage (lazy-loaded via React.lazy + Suspense)
 ```
 
 **Layout** provides the dark `bg-slate-950` shell and the persistent `Navbar`. Pages only need to render their own content div.
@@ -45,6 +45,22 @@ Risk report page. State: `summary: SummaryReportData | null`, `isSummarising`.
 - "Generate Risk Summary" button (in `<main>`, not `<header>`) POSTs to `/summarise` (no body)
 - Renders `<SummaryReport report={summary} />` once data arrives
 
+### EmbeddingsPage (`/embeddings`)
+
+3D embedding scatter page. State: `rawPoints`, `points`, `queryXyz`, `loading`, `error`, `answer`, `isStreaming`, `citedIds`, `esRef`.
+
+- On mount: fetches `/points.json` into `rawPoints`
+- URL `?q=…` is the single source of truth for the query (managed by `EmbeddingsQueryBar`)
+- When `?q=…` changes and `rawPoints` are loaded: `POST /embeddings/project` → sets `queryXyz` (the projected xyz of the query)
+- **Ask button**: fires `GET /query/stream` SSE stream; on `[DONE]`, merges `app_sources` + `product_sources` into `citedIds`
+- `cited` flag on each point: driven by `citedIds` (names cited in the answer), not by the `top_k_ids` from the projection endpoint
+- Lines drawn from `queryXyz` to all `cited` points; no separate toggle
+- EmbeddingsPage is lazy-loaded (`React.lazy`) so Three.js doesn't affect the home-page bundle
+
+The page is split across two files:
+- `pages/EmbeddingsPage.tsx` — scene and page shell; exports `EmbeddingsQueryBar` named export
+- `pages/EmbeddingsPage.utils.ts` — pure helper functions and types (see Key types below)
+
 ---
 
 ## Components
@@ -57,12 +73,13 @@ Risk report page. State: `summary: SummaryReportData | null`, `isSummarising`.
 | `ResponseDisplay` | Renders streamed Markdown answer + source pills. Cited sources = yellow; uncited = blue/violet. Contains `RetrievedContext`. |
 | `RetrievedContext` | Collapsible panel showing raw retrieved document chunks. Hidden by default. |
 | `SummaryReport` | Risk summary table (desktop) + card list (mobile). Expandable rows show product exposures. Risk pills colour-coded by severity. Sorts findings by `revenue_at_risk_000s` descending. |
+| `EmbeddingsQueryBar` | Query input bound to `?q=` search param (300ms debounce), Ask button that triggers SSE stream, streamed answer display, and `QueryChips` reuse. Exported from `EmbeddingsPage.tsx`. |
 
 ---
 
 ## Key types
 
-All exported from `src/components/SummaryReport.tsx`:
+From `src/components/SummaryReport.tsx`:
 
 ```ts
 interface ProductExposure   { product: string; arr_000s: number }
@@ -74,6 +91,21 @@ interface SummaryReportData  { overall_health: string; executive_summary: string
                                critical_risks: RiskFinding[]; governance_gaps: GovernanceGap[];
                                total_apps_reviewed: number; total_arr_at_risk_000s: number }
 ```
+
+From `src/pages/EmbeddingsPage.utils.ts`:
+
+```ts
+interface EmbeddingPoint {
+  id: string; doc_type: string; division: string; name: string; summary: string;
+  risk_rating: string; cost_000s: number; arr_000s: number;
+  projected_xyz: [number, number, number]
+}
+interface EmbeddingPointWithTopK extends EmbeddingPoint {
+  cited: boolean  // true if name appeared in the SSE answer's app_sources / product_sources
+}
+```
+
+Helper functions in `EmbeddingsPage.utils.ts`: `mergeTopKIntoPoints(points, citedIds)`, `buildIsolationFilter(selectedId, points)`, `divisionToColor(division)`, `docTypeToShape(doc_type)`, `pointToSize(doc_type, value)`.
 
 No shared utils or constants file — types live with their component, queries are hardcoded in `QueryChips`.
 
@@ -120,8 +152,9 @@ vi.unstubAllGlobals(); vi.restoreAllMocks()
 
 | Endpoint | Method | Used by | Notes |
 |---|---|---|---|
-| `/query/stream` | GET + query param | HomePage | SSE via `EventSource`; tokens arrive as JSON strings; final frame is `[DONE] {json}` |
+| `/query/stream` | GET + query param | HomePage, EmbeddingsPage | SSE via `EventSource`; tokens arrive as JSON strings; final frame is `[DONE] {json}` |
 | `/summarise` | POST (no body) | SummaryPage | Returns `SummaryReportData` JSON |
-| `/embeddings/project` | POST | EmbeddingsPage (slice 4, #27) | Not yet wired |
+| `/embeddings/project` | POST | EmbeddingsPage | Body `{query, top_k}`. Returns `{projected_xyz, top_k_ids}`. Used to place the query point in the scatter. |
+| `/points.json` | GET (static) | EmbeddingsPage | Served directly from `public/` in dev and `api/static/` in prod; no proxy needed |
 
-Vite proxy forwards all `/query`, `/health`, `/summarise` requests to `http://localhost:8000` in dev.
+Vite proxy forwards `/query`, `/health`, `/summarise`, and `/embeddings` to `http://localhost:8000` in dev.

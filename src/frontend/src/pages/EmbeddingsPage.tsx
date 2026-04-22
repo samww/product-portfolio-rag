@@ -243,7 +243,7 @@ export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps
   const [searchParams, setSearchParams] = useSearchParams()
   const qParam = searchParams.get('q') ?? ''
   const [inputValue, setInputValue] = useState(qParam)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     setInputValue(qParam)

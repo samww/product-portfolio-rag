@@ -8,6 +8,7 @@
 | `POST` | `/query` | Live | Full JSON RAG response |
 | `GET` | `/query/stream` | Live | Streaming RAG response via SSE |
 | `POST` | `/summarise` | Live | Structured risk summary — no request body, no streaming |
+| `POST` | `/embeddings/project` | Live | Projects a query into PCA space and returns top-k IDs |
 
 No list endpoints (`/applications`, `/products`) — the frontend uses pre-written query chips instead.
 
@@ -62,6 +63,22 @@ recommended_action: str
 
 `SummaryReport`, `RiskFinding`, and `GovernanceGap` are defined in `src/rag/models.py` (shared by generator and API). `QueryRequest` and `QueryResponse` are in `src/api/models.py`.
 
+### `ProjectRequest` — body for `POST /embeddings/project`
+
+Reuses `QueryRequest` schema:
+```python
+query: str
+top_k: int = 8
+```
+
+### `ProjectResponse` — response from `POST /embeddings/project`
+```python
+projected_xyz: list[float]   # [x, y, z] — query projected into PCA space
+top_k_ids: list[str]         # document IDs of the top-k nearest neighbours
+```
+
+Returns `503` with `{"detail": "PCA artifact not found — run scripts/ingest.py"}` if `app.state.pca_artifact` is `None` (ingest has not been run).
+
 ## SSE stream format — `GET /query/stream`
 
 Query params: `query` (str, required), `top_k` (int, default 8).
@@ -86,3 +103,4 @@ Routes access shared resources via `request.app.state`, set during FastAPI lifes
 | `collection` | `chromadb.Collection` | |
 | `embed` | `Callable[[list[str]], list[list[float]]]` | |
 | `summary_service` | `src.rag.summary.service.SummaryService` | Pre-composed orchestrator for `/summarise` — owns the fetch-analyse-enrich sequence; invoked as `summary_service.run()` |
+| `pca_artifact` | `src.ingest.pca.PcaArtifact \| None` | Loaded from `.chroma/pca.npz` at startup; `None` if ingest has not been run. Used by `POST /embeddings/project`. |

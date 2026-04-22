@@ -34,7 +34,7 @@ This section gives an overview of the current feature being developed. See the l
 | 2 | PCA fit inline during ingest; write `pca.npz` and `points.json` | #25 | ✅ Shipped |
 | 3 | Static scatter page at `/embeddings` | #26 | ✅ Shipped |
 | 4 | `POST /embeddings/project` endpoint | #27 | ✅ Shipped |
-| 5 | Query input + top-k highlight on `/embeddings` | #28 | Not started |
+| 5 | Query input + top-k highlight on `/embeddings` | #28 | ✅ Shipped |
 
 ## Agent docs (load as needed)
 

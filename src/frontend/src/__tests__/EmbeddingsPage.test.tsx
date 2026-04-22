@@ -72,9 +72,9 @@ describe('EmbeddingsPage projection fetch', () => {
     renderPage('?q=risk')
     await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
 
-    const projectCall = fetchMock.mock.calls.find(([url]: [string]) => url === '/embeddings/project')
+    const projectCall = fetchMock.mock.calls.find((call) => call[0] === '/embeddings/project')
     expect(projectCall).toBeDefined()
-    const body = JSON.parse(projectCall[1].body)
+    const body = JSON.parse(projectCall![1].body)
     expect(body.top_k).toBe(8)
   })
 })
