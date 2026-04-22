@@ -72,7 +72,6 @@ function Point({
   const shape = docTypeToShape(data.doc_type)
   const sizeValue = data.doc_type === 'product' ? data.arr_000s : data.cost_000s
   const size = pointToSize(data.doc_type, sizeValue)
-  const emissiveIntensity = data.topK ? 1.4 : 0.3
   const [x, y, z] = data.projected_xyz
 
   return (
@@ -87,8 +86,18 @@ function Point({
         ) : (
           <boxGeometry args={[size * 1.6, size * 1.6, size * 1.6]} />
         )}
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={emissiveIntensity} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.3} />
       </mesh>
+      {data.cited && (
+        <mesh>
+          {shape === 'sphere' ? (
+            <sphereGeometry args={[size * 3.5, 16, 16]} />
+          ) : (
+            <boxGeometry args={[size * 1.6 * 3.5, size * 1.6 * 3.5, size * 1.6 * 3.5]} />
+          )}
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.0} transparent opacity={0.28} side={THREE.BackSide} />
+        </mesh>
+      )}
     </group>
   )
 }
@@ -150,7 +159,7 @@ function Scene({ points, queryXyz }: {
       {queryXyz && <QueryPoint xyz={queryXyz} />}
 
       {queryXyz && points
-        .filter(p => p.topK)
+        .filter(p => p.cited)
         .map(p => (
           <Line
             key={p.id}
@@ -224,7 +233,13 @@ function DivisionLegend({ divisions }: { divisions: string[] }) {
   )
 }
 
-export function EmbeddingsQueryBar() {
+interface QueryBarProps {
+  onAsk?: (query: string) => void
+  answer?: string
+  isStreaming?: boolean
+}
+
+export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const qParam = searchParams.get('q') ?? ''
   const [inputValue, setInputValue] = useState(qParam)
@@ -251,14 +266,26 @@ export function EmbeddingsQueryBar() {
 
   return (
     <div className="flex flex-col gap-3">
-      <input
-        type="text"
-        placeholder="Type a query to find similar records…"
-        value={inputValue}
-        onChange={handleChange}
-        className="w-full rounded-lg bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-500"
-      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Type a query to find similar records…"
+          value={inputValue}
+          onChange={handleChange}
+          className="flex-1 rounded-lg bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-slate-500"
+        />
+        <button
+          onClick={() => onAsk?.(inputValue)}
+          disabled={isStreaming}
+          className="px-5 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-lg font-semibold text-sm transition-colors cursor-pointer shadow-md shadow-violet-900/50 whitespace-nowrap"
+        >
+          {isStreaming ? 'Asking…' : 'Ask'}
+        </button>
+      </div>
       <QueryChips onSelect={handleChipSelect} />
+      {answer && (
+        <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{answer}</p>
+      )}
     </div>
   )
 }
@@ -272,6 +299,10 @@ export default function EmbeddingsPage() {
   const [queryXyz, setQueryXyz] = useState<[number, number, number] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [answer, setAnswer] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [citedIds, setCitedIds] = useState<string[]>([])
+  const esRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     fetch('/points.json')
@@ -284,6 +315,9 @@ export default function EmbeddingsPage() {
     if (!q) {
       setPoints(mergeTopKIntoPoints(rawPoints, []))
       setQueryXyz(null)
+      setAnswer('')
+      setCitedIds([])
+      esRef.current?.close()
       return
     }
     if (rawPoints.length === 0) return
@@ -294,12 +328,50 @@ export default function EmbeddingsPage() {
       body: JSON.stringify({ query: q, top_k: 8 }),
     })
       .then((r) => r.json())
-      .then(({ projected_xyz, top_k_ids }: { projected_xyz: [number, number, number]; top_k_ids: string[] }) => {
+      .then(({ projected_xyz }: { projected_xyz: [number, number, number] }) => {
         setQueryXyz(projected_xyz)
-        setPoints(mergeTopKIntoPoints(rawPoints, top_k_ids))
       })
       .catch(() => {})
   }, [q, rawPoints])
+
+  useEffect(() => {
+    setPoints(mergeTopKIntoPoints(rawPoints, citedIds))
+  }, [rawPoints, citedIds])
+
+  function handleAsk(query: string) {
+    if (!query.trim() || isStreaming) return
+    esRef.current?.close()
+    setAnswer('')
+    setCitedIds([])
+    setIsStreaming(true)
+
+    const es = new EventSource(`/query/stream?query=${encodeURIComponent(query)}`)
+    esRef.current = es
+
+    es.onmessage = (e) => {
+      const data: string = e.data
+      if (data.startsWith('[DONE]')) {
+        es.close()
+        setIsStreaming(false)
+        try {
+          const payload = JSON.parse(data.slice('[DONE] '.length)) as {
+            app_sources: string[]
+            product_sources: string[]
+          }
+          setCitedIds([...payload.app_sources, ...payload.product_sources])
+        } catch {
+          // malformed payload — ignore
+        }
+      } else {
+        setAnswer((prev) => prev + (JSON.parse(data) as string))
+      }
+    }
+
+    es.onerror = () => {
+      es.close()
+      setIsStreaming(false)
+    }
+  }
 
   const divisions = [...new Set(rawPoints.map((p) => p.division))].sort()
 
@@ -307,7 +379,7 @@ export default function EmbeddingsPage() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Query bar */}
       <div className="px-4 pt-4 pb-2 flex-shrink-0">
-        <EmbeddingsQueryBar />
+        <EmbeddingsQueryBar onAsk={handleAsk} answer={answer} isStreaming={isStreaming} />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 px-4 pb-4 flex-1 overflow-hidden min-h-0">

@@ -18,6 +18,50 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('EmbeddingsQueryBar — Ask button', () => {
+  it('renders an Ask button', () => {
+    renderWithRouter()
+    expect(screen.getByRole('button', { name: /ask/i })).toBeInTheDocument()
+  })
+
+  it('calls onAsk with the current input value when clicked', () => {
+    const onAsk = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/embeddings?q=governance']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar onAsk={onAsk} />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+    expect(onAsk).toHaveBeenCalledWith('governance')
+  })
+})
+
+describe('EmbeddingsQueryBar — answer display', () => {
+  it('renders the answer text below the input when answer prop is provided', () => {
+    render(
+      <MemoryRouter initialEntries={['/embeddings']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar answer="The answer is 42." />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    expect(screen.getByText('The answer is 42.')).toBeInTheDocument()
+  })
+
+  it('renders nothing for the answer when answer prop is empty', () => {
+    render(
+      <MemoryRouter initialEntries={['/embeddings']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar answer="" />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    expect(screen.queryByText('The answer is 42.')).not.toBeInTheDocument()
+  })
+})
+
 describe('EmbeddingsQueryBar', () => {
   it('renders an empty input when no ?q= param', () => {
     renderWithRouter()

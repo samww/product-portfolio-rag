@@ -58,11 +58,13 @@ async def query_stream(query: str, top_k: int = 8, request: Request = None):
     context_texts = [doc.document for doc in docs]
 
     def event_stream():
+        full_answer = ""
         for token in generate_answer_stream(query, docs, request.app.state.openai_client):
+            full_answer += token
             yield f"data: {json.dumps(token)}\n\n"
         done_payload = json.dumps({
-            "app_sources": app_sources,
-            "product_sources": product_sources,
+            "app_sources": [n for n in app_sources if n in full_answer],
+            "product_sources": [n for n in product_sources if n in full_answer],
             "context": context_texts,
             "query": query,
         })

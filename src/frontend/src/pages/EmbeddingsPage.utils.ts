@@ -11,15 +11,15 @@ export interface EmbeddingPoint {
 }
 
 export interface EmbeddingPointWithTopK extends EmbeddingPoint {
-  topK: boolean
+  cited: boolean  // cited in the answer stream — drives lines and glow
 }
 
 export function mergeTopKIntoPoints(
   points: EmbeddingPoint[],
-  topKIds: string[]
+  citedIds: string[]
 ): EmbeddingPointWithTopK[] {
-  const idSet = new Set(topKIds)
-  return points.map(p => ({ ...p, topK: idSet.has(p.id) }))
+  const citedSet = new Set(citedIds)
+  return points.map(p => ({ ...p, cited: citedSet.has(p.name) }))
 }
 
 export function buildIsolationFilter(
@@ -27,7 +27,7 @@ export function buildIsolationFilter(
   _points: EmbeddingPointWithTopK[]
 ): (p: EmbeddingPointWithTopK) => boolean {
   if (selectedId === null) return () => true
-  return (p) => p.id === selectedId || p.topK
+  return (p) => p.id === selectedId || p.cited
 }
 
 const DIVISION_COLORS: Record<string, string> = {

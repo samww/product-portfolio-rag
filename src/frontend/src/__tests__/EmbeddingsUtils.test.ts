@@ -6,7 +6,7 @@ const makePoint = (id: string): EmbeddingPoint => ({
   id,
   doc_type: 'application',
   division: 'Finance',
-  name: 'Test App',
+  name: id,  // use id as name so citedIds can match by name in tests
   summary: 'Summary',
   risk_rating: 'Low',
   cost_000s: 1000,
@@ -61,31 +61,31 @@ describe('pointToSize', () => {
 })
 
 describe('mergeTopKIntoPoints', () => {
-  it('marks points whose IDs are in topKIds as topK true', () => {
+  it('marks points whose IDs are in citedIds as cited true', () => {
     const points = [makePoint('a'), makePoint('b'), makePoint('c')]
     const result = mergeTopKIntoPoints(points, ['a', 'c'])
-    expect(result.find(p => p.id === 'a')?.topK).toBe(true)
-    expect(result.find(p => p.id === 'c')?.topK).toBe(true)
+    expect(result.find(p => p.id === 'a')?.cited).toBe(true)
+    expect(result.find(p => p.id === 'c')?.cited).toBe(true)
   })
 
-  it('marks points not in topKIds as topK false', () => {
+  it('marks points not in citedIds as cited false', () => {
     const points = [makePoint('a'), makePoint('b')]
     const result = mergeTopKIntoPoints(points, ['a'])
-    expect(result.find(p => p.id === 'b')?.topK).toBe(false)
+    expect(result.find(p => p.id === 'b')?.cited).toBe(false)
   })
 
-  it('marks all points as topK false when topKIds is empty', () => {
+  it('marks all points as cited false when citedIds is empty', () => {
     const points = [makePoint('x'), makePoint('y')]
     const result = mergeTopKIntoPoints(points, [])
-    expect(result.every(p => p.topK === false)).toBe(true)
+    expect(result.every(p => p.cited === false)).toBe(true)
   })
 })
 
 describe('buildIsolationFilter', () => {
   const pts: EmbeddingPointWithTopK[] = [
-    { ...makePoint('a'), topK: true },
-    { ...makePoint('b'), topK: false },
-    { ...makePoint('c'), topK: true },
+    { ...makePoint('a'), cited: true },
+    { ...makePoint('b'), cited: false },
+    { ...makePoint('c'), cited: true },
   ]
 
   it('passes all points when selectedId is null', () => {
@@ -93,21 +93,21 @@ describe('buildIsolationFilter', () => {
     expect(pts.every(filter)).toBe(true)
   })
 
-  it('passes only the selected point and topK points when selectedId is set', () => {
+  it('passes only the selected point and cited points when selectedId is set', () => {
     const filter = buildIsolationFilter('b', pts)
-    expect(filter(pts[0])).toBe(true)   // a — topK
+    expect(filter(pts[0])).toBe(true)   // a — cited
     expect(filter(pts[1])).toBe(true)   // b — selected
-    expect(filter(pts[2])).toBe(true)   // c — topK
+    expect(filter(pts[2])).toBe(true)   // c — cited
   })
 
-  it('fails non-topK non-selected points when selectedId is set', () => {
-    const ptsWithNonTopK: EmbeddingPointWithTopK[] = [
-      { ...makePoint('a'), topK: false },
-      { ...makePoint('b'), topK: false },
+  it('fails non-cited non-selected points when selectedId is set', () => {
+    const ptsNonCited: EmbeddingPointWithTopK[] = [
+      { ...makePoint('a'), cited: false },
+      { ...makePoint('b'), cited: false },
     ]
-    const filter = buildIsolationFilter('a', ptsWithNonTopK)
-    expect(filter(ptsWithNonTopK[0])).toBe(true)   // a — selected
-    expect(filter(ptsWithNonTopK[1])).toBe(false)  // b — not selected, not topK
+    const filter = buildIsolationFilter('a', ptsNonCited)
+    expect(filter(ptsNonCited[0])).toBe(true)   // a — selected
+    expect(filter(ptsNonCited[1])).toBe(false)  // b — not selected, not cited
   })
 })
 

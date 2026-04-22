@@ -376,7 +376,8 @@ def test_stream_done_event_contains_sources_context_query(chroma_collection, stu
     test_app.include_router(router)
     test_app.state.collection = chroma_collection
     test_app.state.embed = stub_embed
-    test_app.state.openai_client = _stub_streaming_openai(["answer"])
+    # Answer mentions AuthService — it should appear in app_sources
+    test_app.state.openai_client = _stub_streaming_openai(["AuthService", " is critical"])
     doc_text = "Application: AuthService\nRisk: Critical"
     chroma_collection.upsert(
         documents=[doc_text],
@@ -399,3 +400,28 @@ def test_stream_done_event_contains_sources_context_query(chroma_collection, stu
     assert payload["query"] == "Which apps are critical"
     assert "AuthService" in payload["app_sources"]
     assert doc_text in payload["context"]
+
+
+def test_stream_done_excludes_unreferenced_sources(chroma_collection, stub_embed):
+    """Sources retrieved but not mentioned in the answer must not appear in app_sources."""
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = chroma_collection
+    test_app.state.embed = stub_embed
+    # Answer mentions only AuthService, not PaymentGateway
+    test_app.state.openai_client = _stub_streaming_openai(["AuthService", " is the relevant app"])
+    for doc_id, name in [("app-authservice", "AuthService"), ("app-paymentgateway", "PaymentGateway")]:
+        doc_text = f"Application: {name}\nRisk: High"
+        chroma_collection.upsert(
+            documents=[doc_text],
+            embeddings=stub_embed([doc_text]),
+            metadatas=[{"doc_type": "application", "division": "X",
+                        "risk_rating": "High", "status": "Active", "owner": "X"}],
+            ids=[doc_id],
+        )
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.get("/query/stream?query=test")
+    done_line = next(l for l in response.text.splitlines() if l.startswith("data: [DONE]"))
+    payload = json.loads(done_line[len("data: [DONE] "):])
+    assert "AuthService" in payload["app_sources"]
+    assert "PaymentGateway" not in payload["app_sources"]
