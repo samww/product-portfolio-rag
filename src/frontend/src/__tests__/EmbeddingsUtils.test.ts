@@ -79,6 +79,26 @@ describe('mergeTopKIntoPoints', () => {
     const result = mergeTopKIntoPoints(points, [])
     expect(result.every(p => p.cited === false)).toBe(true)
   })
+
+  it('marks a point as retrieved:true when its id is in retrievedIds', () => {
+    const points = [makePoint('alpha'), makePoint('beta')]
+    const result = mergeTopKIntoPoints(points, [], ['alpha'])
+    expect(result.find(p => p.id === 'alpha')?.retrieved).toBe(true)
+    expect(result.find(p => p.id === 'beta')?.retrieved).toBe(false)
+  })
+
+  it('marks all points as retrieved:false when retrievedIds is omitted', () => {
+    const points = [makePoint('x'), makePoint('y')]
+    const result = mergeTopKIntoPoints(points, [])
+    expect(result.every(p => p.retrieved === false)).toBe(true)
+  })
+
+  it('a point can be both cited and retrieved', () => {
+    const p = makePoint('dual')
+    const result = mergeTopKIntoPoints([p], ['dual'], ['dual'])
+    expect(result[0].cited).toBe(true)
+    expect(result[0].retrieved).toBe(true)
+  })
 })
 
 describe('buildIsolationFilter', () => {

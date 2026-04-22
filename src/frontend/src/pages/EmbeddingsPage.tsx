@@ -118,9 +118,10 @@ function QueryPoint({ xyz }: { xyz: [number, number, number] }) {
   )
 }
 
-function Scene({ points, queryXyz, pinned, onPin }: {
+function Scene({ points, queryXyz, linesVisible, pinned, onPin }: {
   points: EmbeddingPointWithTopK[]
   queryXyz: [number, number, number] | null
+  linesVisible: boolean
   pinned: EmbeddingPoint | null
   onPin: React.Dispatch<React.SetStateAction<EmbeddingPoint | null>>
 }) {
@@ -150,7 +151,7 @@ function Scene({ points, queryXyz, pinned, onPin }: {
 
       {queryXyz && <QueryPoint xyz={queryXyz} />}
 
-      {queryXyz && points
+      {linesVisible && queryXyz && points
         .filter(p => p.cited)
         .map(p => (
           <Line
@@ -160,6 +161,20 @@ function Scene({ points, queryXyz, pinned, onPin }: {
             lineWidth={1}
             transparent
             opacity={0.45}
+          />
+        ))
+      }
+
+      {linesVisible && queryXyz && points
+        .filter(p => p.retrieved && !p.cited)
+        .map(p => (
+          <Line
+            key={`retrieved-${p.id}`}
+            points={[queryXyz, p.projected_xyz]}
+            color="#94a3b8"
+            lineWidth={1}
+            transparent
+            opacity={0.25}
           />
         ))
       }
@@ -313,6 +328,8 @@ export default function EmbeddingsPage() {
   const [answer, setAnswer] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [citedIds, setCitedIds] = useState<string[]>([])
+  const [retrievedIds, setRetrievedIds] = useState<string[]>([])
+  const [answered, setAnswered] = useState(false)
   const [pinned, setPinned] = useState<EmbeddingPoint | null>(null)
   const esRef = useRef<EventSource | null>(null)
 
@@ -329,6 +346,8 @@ export default function EmbeddingsPage() {
       setQueryXyz(null)
       setAnswer('')
       setCitedIds([])
+      setRetrievedIds([])
+      setAnswered(false)
       esRef.current?.close()
       return
     }
@@ -340,21 +359,23 @@ export default function EmbeddingsPage() {
       body: JSON.stringify({ query: q, top_k: 8 }),
     })
       .then((r) => r.json())
-      .then(({ projected_xyz }: { projected_xyz: [number, number, number] }) => {
+      .then(({ projected_xyz, top_k_ids }: { projected_xyz: [number, number, number]; top_k_ids: string[] }) => {
         setQueryXyz(projected_xyz)
+        setRetrievedIds(top_k_ids ?? [])
       })
       .catch(() => {})
   }, [q, rawPoints])
 
   useEffect(() => {
-    setPoints(mergeTopKIntoPoints(rawPoints, citedIds))
-  }, [rawPoints, citedIds])
+    setPoints(mergeTopKIntoPoints(rawPoints, citedIds, retrievedIds))
+  }, [rawPoints, citedIds, retrievedIds])
 
   function handleAsk(query: string) {
     if (!query.trim() || isStreaming) return
     esRef.current?.close()
     setAnswer('')
     setCitedIds([])
+    setAnswered(false)
     setIsStreaming(true)
 
     const es = new EventSource(`/query/stream?query=${encodeURIComponent(query)}`)
@@ -365,6 +386,7 @@ export default function EmbeddingsPage() {
       if (data.startsWith('[DONE]')) {
         es.close()
         setIsStreaming(false)
+        setAnswered(true)
         try {
           const payload = JSON.parse(data.slice('[DONE] '.length)) as {
             app_sources: string[]
@@ -410,7 +432,7 @@ export default function EmbeddingsPage() {
           {!loading && !error && (
             <Canvas camera={{ position: [0, 0, 3], fov: 60 }} onPointerMissed={() => setPinned(null)}>
               <Suspense fallback={null}>
-                <Scene points={points} queryXyz={queryXyz} pinned={pinned} onPin={setPinned} />
+                <Scene points={points} queryXyz={queryXyz} linesVisible={answered} pinned={pinned} onPin={setPinned} />
               </Suspense>
             </Canvas>
           )}
@@ -461,9 +483,19 @@ export default function EmbeddingsPage() {
           {queryXyz && (
             <div>
               <h3 className="text-slate-200 font-medium mb-1.5">Query</h3>
-              <div className="flex items-center gap-2 text-slate-400">
-                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: QUERY_COLOR }} />
-                Query point — lines connect the top‑8 matches
+              <div className="flex flex-col gap-1.5 text-slate-400">
+                <span className="flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: QUERY_COLOR }} />
+                  Query point
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="inline-block w-6 h-px" style={{ backgroundColor: QUERY_COLOR, opacity: 0.8 }} />
+                  Cited in answer
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="inline-block w-6 h-px bg-slate-400 opacity-50" />
+                  Retrieved, not cited
+                </span>
               </div>
             </div>
           )}

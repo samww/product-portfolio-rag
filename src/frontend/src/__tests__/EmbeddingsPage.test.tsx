@@ -20,7 +20,9 @@ vi.mock('@react-three/fiber', () => ({
 vi.mock('@react-three/drei', () => ({
   OrbitControls: () => null,
   Html: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Line: () => null,
+  Line: ({ color, opacity }: { color?: string; opacity?: number }) => (
+    <div data-testid="scene-line" data-color={color} data-opacity={opacity} />
+  ),
 }))
 
 vi.mock('@react-three/postprocessing', () => ({
@@ -109,6 +111,84 @@ describe('EmbeddingsPage projection fetch', () => {
     expect(projectCall).toBeDefined()
     const body = JSON.parse(projectCall![1].body)
     expect(body.top_k).toBe(8)
+  })
+})
+
+describe('EmbeddingsPage — secondary lines for retrieved-but-not-cited', () => {
+  it('draws no lines after projection if the question has not been answered yet', async () => {
+    const points = [makePoint('app1'), makePoint('app2')]
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(points) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app1', 'app2'] }) })
+    )
+
+    renderPage('?q=risk')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    // Query point is projected but no Ask has been clicked — no lines yet
+    expect(screen.queryAllByTestId('scene-line')).toHaveLength(0)
+  })
+
+  it('draws a dim secondary line to a retrieved-but-not-cited point after the answer completes', async () => {
+    installFakeEventSource()
+    const points = [makePoint('app1'), makePoint('app2')]
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(points) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app2'] }) })
+    )
+
+    renderPage('?q=risk')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+    // Simulate [DONE] with no citations — app2 is retrieved only
+    lastES!.onmessage!({ data: '[DONE] {"app_sources":[],"product_sources":[],"context":[],"query":"risk"}' })
+
+    const lines = await screen.findAllByTestId('scene-line')
+    const secondaryLines = lines.filter(l => parseFloat(l.dataset.opacity ?? '1') < 0.4)
+    expect(secondaryLines.length).toBeGreaterThan(0)
+  })
+
+  it('draws no lines while the answer is still streaming', async () => {
+    installFakeEventSource()
+    const points = [makePoint('app1'), makePoint('app2')]
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(points) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app1', 'app2'] }) })
+    )
+
+    renderPage('?q=risk')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+    // Send a token but no [DONE] yet — still streaming
+    lastES!.onmessage!({ data: JSON.stringify('partial') })
+    await screen.findByText('partial')
+
+    expect(screen.queryAllByTestId('scene-line')).toHaveLength(0)
+  })
+
+  it('does not draw a secondary line for points that are neither retrieved nor cited', async () => {
+    installFakeEventSource()
+    const points = [makePoint('app1'), makePoint('app2')]
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(points) })
+      // projection retrieves only app1
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app1'] }) })
+    )
+
+    renderPage('?q=risk')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+    lastES!.onmessage!({ data: '[DONE] {"app_sources":[],"product_sources":[],"context":[],"query":"risk"}' })
+
+    const lines = await screen.findAllByTestId('scene-line')
+    const secondaryLines = lines.filter(l => parseFloat(l.dataset.opacity ?? '1') < 0.4)
+    // Only app1 is retrieved — app2 gets no line
+    expect(secondaryLines.length).toBe(1)
   })
 })
 

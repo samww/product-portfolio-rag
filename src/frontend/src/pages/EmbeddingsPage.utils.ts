@@ -11,15 +11,22 @@ export interface EmbeddingPoint {
 }
 
 export interface EmbeddingPointWithTopK extends EmbeddingPoint {
-  cited: boolean  // cited in the answer stream — drives lines and glow
+  cited: boolean     // cited in the answer stream — drives bright line and glow
+  retrieved: boolean // in top-k vector search results — drives secondary dim line
 }
 
 export function mergeTopKIntoPoints(
   points: EmbeddingPoint[],
-  citedIds: string[]
+  citedIds: string[],
+  retrievedIds: string[] = []
 ): EmbeddingPointWithTopK[] {
   const citedSet = new Set(citedIds)
-  return points.map(p => ({ ...p, cited: citedSet.has(p.name) }))
+  const retrievedSet = new Set(retrievedIds)
+  return points.map(p => ({
+    ...p,
+    cited: citedSet.has(p.name),
+    retrieved: retrievedSet.has(p.id),
+  }))
 }
 
 export function buildIsolationFilter(
