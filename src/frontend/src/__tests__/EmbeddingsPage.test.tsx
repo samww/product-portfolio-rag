@@ -190,6 +190,44 @@ describe('EmbeddingsPage — secondary lines for retrieved-but-not-cited', () =>
     // Only app1 is retrieved — app2 gets no line
     expect(secondaryLines.length).toBe(1)
   })
+
+  it('derives cited IDs from streamed answer text, not from app_sources list', async () => {
+    // When the API sends all retrieved sources (post-fix), only the one that appears
+    // in the streamed answer text should get a primary line; the other should be secondary.
+    installFakeEventSource()
+    const namedPoints = [
+      { ...makePoint('app1'), name: 'AuthService' },
+      { ...makePoint('app2'), name: 'PaymentGateway' },
+    ]
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve(namedPoints) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app1', 'app2'] }) })
+    )
+
+    renderPage('?q=risk')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+    // Stream the answer — only AuthService is mentioned
+    lastES!.onmessage!({ data: JSON.stringify('AuthService') })
+    lastES!.onmessage!({ data: JSON.stringify(' is relevant') })
+
+    // [DONE] carries ALL retrieved sources (the new API contract)
+    lastES!.onmessage!({
+      data: '[DONE] {"app_sources":["AuthService","PaymentGateway"],"product_sources":[],"context":[],"query":"risk"}',
+    })
+
+    // Wait for the stable state: 1 primary (AuthService cited) + 1 secondary (PaymentGateway retrieved)
+    await waitFor(() => {
+      const lines = screen.getAllByTestId('scene-line')
+      const primaryLines = lines.filter(l => parseFloat(l.dataset.opacity ?? '1') >= 0.4)
+      const secondaryLines = lines.filter(l => parseFloat(l.dataset.opacity ?? '1') < 0.4)
+      // AuthService → primary (cited); PaymentGateway → secondary (retrieved, not cited)
+      expect(primaryLines).toHaveLength(1)
+      expect(secondaryLines).toHaveLength(1)
+    })
+  })
 })
 
 describe('EmbeddingsPage teaching panel', () => {

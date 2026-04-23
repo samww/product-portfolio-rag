@@ -378,6 +378,7 @@ export default function EmbeddingsPage() {
     setAnswered(false)
     setIsStreaming(true)
 
+    let accum = ''
     const es = new EventSource(`/query/stream?query=${encodeURIComponent(query)}`)
     esRef.current = es
 
@@ -392,12 +393,15 @@ export default function EmbeddingsPage() {
             app_sources: string[]
             product_sources: string[]
           }
-          setCitedIds([...payload.app_sources, ...payload.product_sources])
+          const allSources = [...payload.app_sources, ...payload.product_sources]
+          setCitedIds(allSources.filter(n => accum.includes(n)))
         } catch {
           // malformed payload — ignore
         }
       } else {
-        setAnswer((prev) => prev + (JSON.parse(data) as string))
+        const token = JSON.parse(data) as string
+        accum += token
+        setAnswer((prev) => prev + token)
       }
     }
 

@@ -63,8 +63,8 @@ async def query_stream(query: str, top_k: int = 8, request: Request = None):
             full_answer += token
             yield f"data: {json.dumps(token)}\n\n"
         done_payload = json.dumps({
-            "app_sources": [n for n in app_sources if n in full_answer],
-            "product_sources": [n for n in product_sources if n in full_answer],
+            "app_sources": app_sources,
+            "product_sources": product_sources,
             "context": context_texts,
             "query": query,
         })

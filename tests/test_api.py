@@ -402,13 +402,13 @@ def test_stream_done_event_contains_sources_context_query(chroma_collection, stu
     assert doc_text in payload["context"]
 
 
-def test_stream_done_excludes_unreferenced_sources(chroma_collection, stub_embed):
-    """Sources retrieved but not mentioned in the answer must not appear in app_sources."""
+def test_stream_done_includes_all_retrieved_sources(chroma_collection, stub_embed):
+    """[DONE] payload must include ALL retrieved source names, cited or not."""
     test_app = FastAPI()
     test_app.include_router(router)
     test_app.state.collection = chroma_collection
     test_app.state.embed = stub_embed
-    # Answer mentions only AuthService, not PaymentGateway
+    # Answer mentions only AuthService — PaymentGateway is retrieved but not cited
     test_app.state.openai_client = _stub_streaming_openai(["AuthService", " is the relevant app"])
     for doc_id, name in [("app-authservice", "AuthService"), ("app-paymentgateway", "PaymentGateway")]:
         doc_text = f"Application: {name}\nRisk: High"
@@ -424,4 +424,4 @@ def test_stream_done_excludes_unreferenced_sources(chroma_collection, stub_embed
     done_line = next(l for l in response.text.splitlines() if l.startswith("data: [DONE]"))
     payload = json.loads(done_line[len("data: [DONE] "):])
     assert "AuthService" in payload["app_sources"]
-    assert "PaymentGateway" not in payload["app_sources"]
+    assert "PaymentGateway" in payload["app_sources"]
