@@ -78,6 +78,84 @@ Assert-NotContains `
     "az ad app create"
 
 Write-Host ""
+Write-Host "deploy.ps1 (behavioural)"
+
+function New-MockAzDir {
+    param([int]$AcrBuildExitCode = 0)
+    $TempDir = [IO.Path]::Combine([IO.Path]::GetTempPath(), [IO.Path]::GetRandomFileName())
+    $null = New-Item -ItemType Directory -Path $TempDir
+    $LogFile = "$TempDir\az_calls.log"
+
+    # PowerShell mock: logs every call, returns configured exit code for acr build
+    $mockPs1 = @"
+param([Parameter(ValueFromRemainingArguments=`$true)][string[]]`$a)
+Add-Content '$LogFile' (`$a -join ' ')
+if (`$a[0] -eq 'acr' -and `$a[1] -eq 'build') { exit $AcrBuildExitCode }
+if (`$a[0] -eq 'acr' -and `$a[1] -eq 'credential') {
+    Write-Output '{"username":"u","passwords":[{"value":"p"}]}'
+    exit 0
+}
+if (`$a[0] -eq 'containerapp') {
+    if (`$a[1] -eq 'env' -and `$a[2] -eq 'list') { Write-Output '0'; exit 0 }
+    if (`$a[1] -eq 'list') { Write-Output '0'; exit 0 }
+    if (`$a[1] -eq 'show') { Write-Output 'fqdn.example.com'; exit 0 }
+    exit 0
+}
+exit 0
+"@
+    Set-Content -Path "$TempDir\az_mock.ps1" -Value $mockPs1 -Encoding UTF8
+
+    @'
+@echo off
+powershell.exe -NoProfile -NonInteractive -File "%~dp0az_mock.ps1" %*
+exit /b %ERRORLEVEL%
+'@ | Set-Content -Path "$TempDir\az.cmd" -Encoding Ascii
+
+    return @{ Dir = $TempDir; Log = $LogFile }
+}
+
+$RepoRoot  = (Get-Location).Path
+$DeployPs1 = "$RepoRoot\scripts\deploy.ps1"
+
+# ── Behavioural test 1: halts on acr build failure ────────────────────────────
+$mock1 = New-MockAzDir -AcrBuildExitCode 2
+$cmd1  = "`$env:PATH='$($mock1.Dir);'+`$env:PATH; `$env:OPENAI_API_KEY='k'; Set-Location '$RepoRoot'; try { & '$DeployPs1' } catch { exit 1 }; exit 0"
+$proc1 = Start-Process powershell.exe `
+    -ArgumentList @('-NoProfile', '-NonInteractive', '-Command', $cmd1) `
+    -Wait -PassThru -NoNewWindow `
+    -RedirectStandardOutput "$($mock1.Dir)\out.txt" `
+    -RedirectStandardError  "$($mock1.Dir)\err.txt"
+$calls1  = if (Test-Path $mock1.Log) { Get-Content $mock1.Log } else { @() }
+$caUsed1 = $calls1 | Where-Object { $_ -match '^containerapp (update|create)' }
+if ($proc1.ExitCode -ne 0 -and -not $caUsed1) {
+    Pass-Test "deploy.ps1: exits non-zero and skips containerapp on acr build failure"
+} else {
+    $why = if ($proc1.ExitCode -eq 0) { "exit code was 0" } else { "containerapp was called after failed build" }
+    Fail-Test "deploy.ps1: exits non-zero and skips containerapp on acr build failure  ($why)"
+}
+Remove-Item $mock1.Dir -Recurse -Force -ErrorAction SilentlyContinue
+
+# ── Behavioural test 2: build context anchored to repo root ───────────────────
+$mock2    = New-MockAzDir -AcrBuildExitCode 0
+$fakeWdir = [IO.Path]::Combine([IO.Path]::GetTempPath(), [IO.Path]::GetRandomFileName())
+$null     = New-Item -ItemType Directory -Path $fakeWdir
+$cmd2     = "`$env:PATH='$($mock2.Dir);'+`$env:PATH; `$env:OPENAI_API_KEY='k'; Set-Location '$fakeWdir'; try { & '$DeployPs1' } catch {}; exit 0"
+$proc2 = Start-Process powershell.exe `
+    -ArgumentList @('-NoProfile', '-NonInteractive', '-Command', $cmd2) `
+    -Wait -PassThru -NoNewWindow `
+    -RedirectStandardOutput "$($mock2.Dir)\out.txt" `
+    -RedirectStandardError  "$($mock2.Dir)\err.txt"
+$calls2     = if (Test-Path $mock2.Log) { Get-Content $mock2.Log } else { @() }
+$buildCall2 = $calls2 | Where-Object { $_ -match '^acr build' } | Select-Object -First 1
+if ($buildCall2 -and ($buildCall2 -match [regex]::Escape($RepoRoot))) {
+    Pass-Test "deploy.ps1: build context is anchored to repo root regardless of working directory"
+} else {
+    Fail-Test "deploy.ps1: build context is anchored to repo root regardless of working directory  (build call: $buildCall2)"
+}
+Remove-Item $mock2.Dir -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $fakeWdir -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host ""
 Write-Host "Results: $Pass passed, $Fail failed"
 
 if ($Errors.Count -gt 0) {

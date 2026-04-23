@@ -2,6 +2,11 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+
+function Assert-AzSuccess([string]$Op) {
+    if ($LASTEXITCODE -ne 0) { throw "az $Op failed (exit $LASTEXITCODE)" }
+}
 
 $AppName       = if ($env:APP_NAME)       { $env:APP_NAME }       else { 'portfolio-rag' }
 $ResourceGroup = if ($env:RESOURCE_GROUP) { $env:RESOURCE_GROUP } else { 'rg-portfolio-rag' }
@@ -19,6 +24,7 @@ Write-Host "ContainerApp   : $AppName"
 
 # ── 1. Resource group + ACR ──────────────────────────────────────────────────
 az group create --name $ResourceGroup --location $Location --output none
+Assert-AzSuccess 'group create'
 
 az acr create `
     --name $AcrName `
@@ -26,6 +32,7 @@ az acr create `
     --sku Basic `
     --admin-enabled true `
     --output none
+Assert-AzSuccess 'acr create'
 
 # ── 2. Build image in ACR (cloud build — no local Docker needed) ─────────────
 $Tag   = (Get-Date -Format 'yyyyMMddHHmmss')
@@ -36,7 +43,8 @@ az acr build `
     --registry $AcrName `
     --resource-group $ResourceGroup `
     --image "${AppName}:$Tag" `
-    .
+    $RepoRoot
+Assert-AzSuccess 'acr build'
 
 # ── 3. Get ACR admin credentials ─────────────────────────────────────────────
 $AcrCreds = az acr credential show --name $AcrName | ConvertFrom-Json

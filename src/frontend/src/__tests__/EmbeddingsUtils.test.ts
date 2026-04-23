@@ -103,9 +103,9 @@ describe('mergeTopKIntoPoints', () => {
 
 describe('buildIsolationFilter', () => {
   const pts: EmbeddingPointWithTopK[] = [
-    { ...makePoint('a'), cited: true },
-    { ...makePoint('b'), cited: false },
-    { ...makePoint('c'), cited: true },
+    { ...makePoint('a'), cited: true,  retrieved: false },
+    { ...makePoint('b'), cited: false, retrieved: false },
+    { ...makePoint('c'), cited: true,  retrieved: false },
   ]
 
   it('passes all points when selectedId is null', () => {
@@ -122,8 +122,8 @@ describe('buildIsolationFilter', () => {
 
   it('fails non-cited non-selected points when selectedId is set', () => {
     const ptsNonCited: EmbeddingPointWithTopK[] = [
-      { ...makePoint('a'), cited: false },
-      { ...makePoint('b'), cited: false },
+      { ...makePoint('a'), cited: false, retrieved: false },
+      { ...makePoint('b'), cited: false, retrieved: false },
     ]
     const filter = buildIsolationFilter('a', ptsNonCited)
     expect(filter(ptsNonCited[0])).toBe(true)   // a — selected
