@@ -242,11 +242,12 @@ function DivisionLegend({ divisions }: { divisions: string[] }) {
 
 interface QueryBarProps {
   onAsk?: (query: string) => void
+  onQueryChange?: () => void
   answer?: string
   isStreaming?: boolean
 }
 
-export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps) {
+export function EmbeddingsQueryBar({ onAsk, onQueryChange, answer, isStreaming }: QueryBarProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const qParam = searchParams.get('q') ?? ''
   const [inputValue, setInputValue] = useState(qParam)
@@ -259,6 +260,7 @@ export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setInputValue(val)
+    onQueryChange?.()
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       setSearchParams(val ? { q: val } : {}, { replace: true })
@@ -268,6 +270,7 @@ export function EmbeddingsQueryBar({ onAsk, answer, isStreaming }: QueryBarProps
   const handleChipSelect = (q: string) => {
     clearTimeout(debounceRef.current)
     setInputValue(q)
+    onQueryChange?.()
     setSearchParams(q ? { q } : {}, { replace: true })
   }
 
@@ -351,6 +354,11 @@ export default function EmbeddingsPage() {
       esRef.current?.close()
       return
     }
+    setAnswer('')
+    setCitedIds([])
+    setRetrievedIds([])
+    setAnswered(false)
+
     if (rawPoints.length === 0) return
 
     fetch('/embeddings/project', {
@@ -417,7 +425,12 @@ export default function EmbeddingsPage() {
     <div className="flex flex-col lg:h-full lg:overflow-hidden">
       {/* Query bar */}
       <div className="px-4 pt-4 pb-2 flex-shrink-0">
-        <EmbeddingsQueryBar onAsk={handleAsk} answer={answer} isStreaming={isStreaming} />
+        <EmbeddingsQueryBar
+          onAsk={handleAsk}
+          onQueryChange={() => { setAnswer(''); setAnswered(false); setCitedIds([]) }}
+          answer={answer}
+          isStreaming={isStreaming}
+        />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 px-4 pb-4 lg:flex-1 lg:overflow-hidden lg:min-h-0">

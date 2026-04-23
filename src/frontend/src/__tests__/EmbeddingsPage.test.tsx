@@ -332,6 +332,52 @@ describe('EmbeddingsPage — streaming answer display', () => {
   })
 })
 
+describe('EmbeddingsPage — query change clears stale visuals', () => {
+  it('clears the answer box immediately when a chip is selected', async () => {
+    installFakeEventSource()
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve([makePoint('app1')]) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: [] }) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [0, 1, 0], top_k_ids: [] }) })
+    )
+
+    renderPage('?q=governance')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+    lastES!.onmessage!({ data: JSON.stringify('Some answer') })
+    await screen.findByTestId('answer-box')
+
+    // Select a different chip — should clear the answer immediately
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'Which applications have no named owner?' },
+    })
+
+    expect(screen.queryByTestId('answer-box')).not.toBeInTheDocument()
+  })
+
+  it('clears lines immediately when the user types a new query', async () => {
+    installFakeEventSource()
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve([makePoint('app1')]) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ projected_xyz: [1, 0, 0], top_k_ids: ['app1'] }) })
+    )
+
+    renderPage('?q=governance')
+    await screen.findByRole('heading', { name: /^Query$/i, level: 3 })
+
+    fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+    lastES!.onmessage!({ data: '[DONE] {"app_sources":["app1"],"product_sources":[],"context":[],"query":"governance"}' })
+
+    await screen.findAllByTestId('scene-line')
+
+    // Type into the input — lines should vanish without clicking Ask
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'something else' } })
+
+    expect(screen.queryAllByTestId('scene-line')).toHaveLength(0)
+  })
+})
+
 describe('EmbeddingsPage — onPointerMissed dismisses pinned tooltip', () => {
   it('clears the pinned tooltip when the canvas fires onPointerMissed', async () => {
     const points = [makePoint('app1')]

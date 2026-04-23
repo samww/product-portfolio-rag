@@ -191,6 +191,38 @@ describe('EmbeddingsQueryBar', () => {
   })
 })
 
+describe('EmbeddingsQueryBar — onQueryChange', () => {
+  it('calls onQueryChange immediately when the user types', () => {
+    vi.useFakeTimers()
+    const onQueryChange = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/embeddings?q=old']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar onQueryChange={onQueryChange} />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'new query' } })
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+    // must fire before the 300ms debounce
+    act(() => { vi.advanceTimersByTime(0) })
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onQueryChange when a chip is selected', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/embeddings']}>
+        <Routes>
+          <Route path="/embeddings" element={<EmbeddingsQueryBar onQueryChange={onQueryChange} />} />
+        </Routes>
+      </MemoryRouter>
+    )
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Which applications have no named owner?' } })
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+  })
+})
+
 function SearchDisplay() {
   const [params] = useSearchParams()
   return <div data-testid="search">{params.get('q') ?? ''}</div>
