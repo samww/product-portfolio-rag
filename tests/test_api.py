@@ -284,6 +284,15 @@ def test_get_root_serves_frontend_html():
     assert "text/html" in response.headers["content-type"]
 
 
+def test_get_embeddings_serves_spa_html():
+    from fastapi.testclient import TestClient
+    from src.api.main import app
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get("/embeddings")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+
 def test_get_assets_serves_static_files():
     import os
     from pathlib import Path

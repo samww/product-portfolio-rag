@@ -9,7 +9,7 @@ import chromadb
 import numpy as np
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from openai import OpenAI
 
 from src.api.routes import router
@@ -64,4 +64,11 @@ _STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="Product Portfolio RAG", lifespan=lifespan)
 app.include_router(router)
-app.mount("/", StaticFiles(directory=_STATIC_DIR, html=True), name="static")
+
+
+@app.get("/{path:path}")
+async def spa_fallback(path: str) -> FileResponse:
+    candidate = _STATIC_DIR / path
+    if candidate.is_file():
+        return FileResponse(candidate)
+    return FileResponse(_STATIC_DIR / "index.html")
