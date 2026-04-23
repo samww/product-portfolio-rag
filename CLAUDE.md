@@ -26,15 +26,14 @@
 
 This section gives an overview of the current feature being developed. See the linked issue for full requirements and implementation decisions.
 
-**Current feature: 3D embedding visualisation demo page** — #23
+**Current feature: Deepen the ingest module (`Ingestor` class)** — #42
 
 | # | Slice | Issue | Status |
 |---|---|---|---|
-| 1 | Move summary panel to `/summary` route | #24 | ✅ Shipped |
-| 2 | PCA fit inline during ingest; write `pca.npz` and `points.json` | #25 | ✅ Shipped |
-| 3 | Static scatter page at `/embeddings` | #26 | ✅ Shipped |
-| 4 | `POST /embeddings/project` endpoint | #27 | ✅ Shipped |
-| 5 | Query input + top-k highlight on `/embeddings` | #28 | ✅ Shipped |
+| 1 | Introduce `Ingestor.run()` and migrate `scripts/ingest.py` | #43 | 🔲 Todo |
+| 2 | Add `Ingestor.exposures()` and collapse API lifespan duplication | #44 | 🔲 Todo |
+| 3 | Prune redundant ingest unit tests; add chunker/retriever round-trip test | #45 | 🔲 Todo |
+| 4 | Privatize ingest internals (`_loader`, `_joiner`, `_chunker`, `_indexer`) | #46 | 🔲 Todo |
 
 ## Agent docs (load as needed)
 
