@@ -10,6 +10,8 @@ A Retrieval-Augmented Generation application for querying an enterprise applicat
 
 **Structured risk summary** — `POST /summarise` runs an agentic pass over all high-risk and ownerless applications and returns a machine-readable `SummaryReport`: overall health rating, prioritised risk findings with recommended actions, and governance gaps.
 
+**3D embedding visualisation** — `/embeddings` renders all 44 documents as a 3D scatter plot (PCA-reduced from 1536-dimensional embeddings). Type a query to project it into the same space, run the RAG stream, and see lines drawn to every cited document.
+
 The dataset is a fictional company (Pragmenta Insights) with 30 applications and 14 commercial products, designed to surface non-obvious risk. The centrepiece scenario is a two-hop indirect dependency — DataLicensing ($6.2m ARR) → CoreDataWarehouse → AuthService (Critical, vendor EOL Q2 2026). Transitive risk is resolved at ingestion time and stored in the product document; no multi-hop retrieval or LLM arithmetic at query time.
 
 ## Architecture
@@ -55,7 +57,7 @@ Are there any capability overlaps between applications that could be consolidate
 | LLM | OpenAI GPT-4o (generation), text-embedding-3-small (embeddings) |
 | Vector store | ChromaDB — local file persistence at `.chroma/` |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS |
-| Container | Docker multi-stage build (Node 20 → Python 3.12) |
+| Container | Docker multi-stage build (Node 22 → Python 3.12) |
 | Cloud | Azure Container Apps, az CLI, optional Easy Auth |
 
 No LangChain or LlamaIndex — the RAG pipeline is built directly with the OpenAI SDK and ChromaDB SDK.
@@ -75,7 +77,7 @@ On first startup the container ingests data into ChromaDB (~10 seconds). Subsequ
 
 ### Local development
 
-**Prerequisites:** Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 20.
+**Prerequisites:** Python 3.12, [uv](https://docs.astral.sh/uv/), Node.js 22.
 
 ```bash
 # 1. Configure environment

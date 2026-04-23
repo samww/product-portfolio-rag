@@ -53,7 +53,10 @@
       "Bash(npx tsc *)",
       "Bash(git -C \"E:/Production/product-portfolio-rag\" status)",
       "Bash(git -C \"E:/Production/product-portfolio-rag\" diff --stat)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(xargs cat *)",
+      "PowerShell(powershell.exe -NoProfile -NonInteractive -File \"tests\\\\test_infra.ps1\"; exit $LASTEXITCODE)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ]
   }
 }

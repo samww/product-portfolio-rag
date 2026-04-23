@@ -4,7 +4,7 @@
 
 React 19 · TypeScript · Tailwind CSS v4 · Vite · react-router-dom v7 · Vitest + React Testing Library
 
-Build output: `npm run build` compiles to `src/api/static/` (consumed by FastAPI `StaticFiles` mount in production). Dev server proxies `/query`, `/health`, and `/summarise` to `http://localhost:8000`.
+Build output: `npm run build` compiles to `src/api/static/` (consumed by FastAPI `StaticFiles` mount in production). Dev server proxies `/query`, `/health`, `/summarise`, and `/embeddings/project` to `http://localhost:8000`.
 
 ---
 
@@ -157,4 +157,4 @@ vi.unstubAllGlobals(); vi.restoreAllMocks()
 | `/embeddings/project` | POST | EmbeddingsPage | Body `{query, top_k}`. Returns `{projected_xyz, top_k_ids}`. Used to place the query point in the scatter. |
 | `/points.json` | GET (static) | EmbeddingsPage | Served directly from `public/` in dev and `api/static/` in prod; no proxy needed |
 
-Vite proxy forwards `/query`, `/health`, `/summarise`, and `/embeddings` to `http://localhost:8000` in dev.
+Vite proxy forwards `/query`, `/health`, `/summarise`, and `/embeddings/project` to `http://localhost:8000` in dev. `/embeddings` itself is not proxied — the SPA route is served by the dev server, and `/points.json` is served from `public/` without a proxy.
