@@ -42,7 +42,7 @@ class Ingestor:
 
     def run(self, reset: bool = False) -> IngestResult:
         if self._collection.count() > 0 and not reset:
-            exposures = self._compute_exposures()
+            exposures = self.exposures()
             return IngestResult(chunk_count=self._collection.count(), exposures=exposures)
 
         if reset:
@@ -99,7 +99,7 @@ class Ingestor:
         exposures = compute_app_product_exposures(enriched)
         return IngestResult(chunk_count=len(docs), exposures=exposures)
 
-    def _compute_exposures(self) -> dict[str, list[tuple[str, int]]]:
+    def exposures(self) -> dict[str, list[tuple[str, int]]]:
         apps = load_applications(self._data_dir / "applications.json")
         products = load_products(self._data_dir / "products.json")
         enriched = enrich_products(products, apps)

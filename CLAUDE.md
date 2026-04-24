@@ -31,7 +31,7 @@ This section gives an overview of the current feature being developed. See the l
 | # | Slice | Issue | Status |
 |---|---|---|---|
 | 1 | Introduce `Ingestor.run()` and migrate `scripts/ingest.py` | #43 | ✅ Done |
-| 2 | Add `Ingestor.exposures()` and collapse API lifespan duplication | #44 | 🔲 Todo |
+| 2 | Add `Ingestor.exposures()` and collapse API lifespan duplication | #44 | ✅ Done |
 | 3 | Prune redundant ingest unit tests; add chunker/retriever round-trip test | #45 | 🔲 Todo |
 | 4 | Privatize ingest internals (`_loader`, `_joiner`, `_chunker`, `_indexer`) | #46 | 🔲 Todo |
 

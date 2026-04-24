@@ -41,7 +41,7 @@ query → embed via text-embedding-3-small
 | `chunker.py` | Formats each application and enriched product record as a labelled text block for embedding |
 | `indexer.py` | Embeds all 44 docs, upserts into the `"portfolio"` collection with metadata (`doc_type`, `division`, `risk_rating`, `status`, `owner`, `name`, `summary`), calls `pca.fit()` inline on the computed embeddings, and returns a `PcaArtifact`. |
 | `pca.py` | `PcaArtifact` dataclass (`mean`, `components`, `points`). `fit(embeddings, ids, metadatas) -> PcaArtifact` — mean-centres, runs `numpy.linalg.svd`, stores 3 components and per-point projected xyz. `project(artifact, embeddings) -> np.ndarray` — applies stored mean/components to new vectors. Written to `.chroma/pca.npz` (mean + components) and `src/frontend/public/points.json` (per-point metadata) by `Ingestor.run()`. Both artifacts are wiped by `reset=True`. |
-| `ingestor.py` | `Ingestor(collection, embed, *, data_dir, pca_path, points_path)` — orchestrates the full pipeline: load → enrich → chunk → index → write PCA artifacts. `run(reset=False) -> IngestResult(chunk_count, exposures)`. No-op when the collection is already populated and `reset=False`; wipes `pca.npz` and `points.json` before re-indexing when `reset=True`. `Ingestor` and `IngestResult` are exported from `src/ingest/__init__.py`. |
+| `ingestor.py` | `Ingestor(collection, embed, *, data_dir, pca_path, points_path)` — orchestrates the full pipeline: load → enrich → chunk → index → write PCA artifacts. `run(reset=False) -> IngestResult(chunk_count, exposures)`. No-op when the collection is already populated and `reset=False`; wipes `pca.npz` and `points.json` before re-indexing when `reset=True`. `exposures() -> dict[str, list[tuple[str, int]]]` — loads apps + products from disk, runs enrichment, returns the per-app product-exposures dict; performs no Chroma or network I/O. `Ingestor` and `IngestResult` are exported from `src/ingest/__init__.py`. |
 
 Entry point: `scripts/ingest.py` — ≤20 lines; constructs `chromadb.PersistentClient`, an `embed` callable, and delegates everything to `Ingestor(collection, embed).run(reset=args.reset)`.
 
@@ -61,13 +61,13 @@ Ports-and-adapters package owning the `/summarise` composition. Pure in-process;
 |---|---|
 | `ports.py` | `AtRiskRecordsSource` and `ExposureLookup` Protocols; `StructuredAnalyst` as a `Callable[[Sequence[RetrievedDoc]], SummaryReport]` type alias |
 | `service.py` | `SummaryService` — frozen dataclass with a single `run()` method: fetch records → call analyst → inject `product_exposures` into each `RiskFinding` |
-| `adapters.py` | `ChromaAtRiskSource` wraps `retrieve_at_risk_docs(collection)`; `DictExposureLookup` wraps the dict returned by `compute_app_product_exposures` (contract: returns `[]` for unknown apps, never raises) |
+| `adapters.py` | `ChromaAtRiskSource` wraps `retrieve_at_risk_docs(collection)`; `DictExposureLookup` wraps the dict returned by `Ingestor(...).exposures()` (contract: returns `[]` for unknown apps, never raises) |
 
 ### API — `src/api/`
 
 | Module | Responsibility |
 |---|---|
-| `main.py` | FastAPI app + lifespan: loads `.env`, creates `OpenAI` client, connects `PersistentClient` at `.chroma/`, loads `data/applications.json` + `data/products.json`, composes a `SummaryService` from `ChromaAtRiskSource`, a `generate_summary` lambda, and `DictExposureLookup(compute_app_product_exposures(enriched))`, attaches client + collection + embed + `summary_service` to `app.state`. Also loads `PcaArtifact` from `.chroma/pca.npz` into `app.state.pca_artifact` (set to `None` with a warning log if missing). |
+| `main.py` | FastAPI app + lifespan: loads `.env`, creates `OpenAI` client, connects `PersistentClient` at `.chroma/`, composes a `SummaryService` from `ChromaAtRiskSource`, a `generate_summary` lambda, and `DictExposureLookup(Ingestor(collection, embed).exposures())`, attaches client + collection + embed + `summary_service` to `app.state`. Also loads `PcaArtifact` from `.chroma/pca.npz` into `app.state.pca_artifact` (set to `None` with a warning log if missing). |
 | `routes.py` | Route handlers — access shared resources via `request.app.state`. `/summarise` is a two-line delegate to `request.app.state.summary_service.run()`. |
 | `models.py` | Pydantic request/response models for API layer |
 

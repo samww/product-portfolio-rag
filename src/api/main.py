@@ -13,8 +13,7 @@ from fastapi.responses import FileResponse
 from openai import OpenAI
 
 from src.api.routes import router
-from src.ingest.joiner import compute_app_product_exposures, enrich_products
-from src.ingest.loader import load_applications, load_products
+from src.ingest import Ingestor
 from src.ingest.pca import PcaArtifact
 from src.rag.generator import generate_summary
 from src.rag.summary.adapters import ChromaAtRiskSource, DictExposureLookup
@@ -39,16 +38,14 @@ async def lifespan(app: FastAPI):
     openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     chroma_client = chromadb.PersistentClient(path=".chroma")
     collection = chroma_client.get_or_create_collection("portfolio")
-    apps = load_applications(DATA_DIR / "applications.json")
-    products = load_products(DATA_DIR / "products.json")
-    enriched = enrich_products(products, apps)
+    embed = _build_embed(openai_client)
     app.state.openai_client = openai_client
     app.state.collection = collection
-    app.state.embed = _build_embed(openai_client)
+    app.state.embed = embed
     app.state.summary_service = SummaryService(
         records=ChromaAtRiskSource(collection),
         analyst=lambda docs: generate_summary(list(docs), openai_client),
-        exposures=DictExposureLookup(compute_app_product_exposures(enriched)),
+        exposures=DictExposureLookup(Ingestor(collection, embed).exposures()),
     )
     pca_path = Path(".chroma/pca.npz")
     try:

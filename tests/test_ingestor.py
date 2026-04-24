@@ -146,3 +146,74 @@ def test_points_json_shape(chroma_collection, stub_embed, tmp_path):
     for point in points:
         assert required_keys == set(point.keys()), f"Shape mismatch: {set(point.keys())}"
         assert len(point["projected_xyz"]) == 3
+
+
+# ---------------------------------------------------------------------------
+# Cycle 7: exposures() returns a dict
+# ---------------------------------------------------------------------------
+
+def test_exposures_returns_dict(stub_embed, tmp_path):
+    import chromadb
+    collection = chromadb.EphemeralClient().create_collection("noop")
+    ingestor = Ingestor(
+        collection,
+        stub_embed,
+        data_dir=Path("data"),
+        pca_path=None,
+        points_path=None,
+    )
+    result = ingestor.exposures()
+    assert isinstance(result, dict)
+
+
+# ---------------------------------------------------------------------------
+# Cycle 8: exposures() never touches the Chroma collection
+# ---------------------------------------------------------------------------
+
+def test_exposures_does_not_access_collection(stub_embed, tmp_path):
+    class _RaisingCollection:
+        def __getattr__(self, name):
+            raise AssertionError(f"collection.{name} must not be called by exposures()")
+
+    ingestor = Ingestor(
+        _RaisingCollection(),
+        stub_embed,
+        data_dir=Path("data"),
+        pca_path=None,
+        points_path=None,
+    )
+    ingestor.exposures()  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Cycle 9: exposures() boundary test — AuthService aggregation matches fixture
+# ---------------------------------------------------------------------------
+
+def test_exposures_authservice_aggregation(stub_embed, sample_apps_path, sample_products_path, tmp_path):
+    import shutil
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    shutil.copy(sample_apps_path, data_dir / "applications.json")
+    shutil.copy(sample_products_path, data_dir / "products.json")
+
+    class _RaisingCollection:
+        def __getattr__(self, name):
+            raise AssertionError(f"collection.{name} must not be called by exposures()")
+
+    ingestor = Ingestor(
+        _RaisingCollection(),
+        stub_embed,
+        data_dir=data_dir,
+        pca_path=None,
+        points_path=None,
+    )
+    result = ingestor.exposures()
+
+    auth_exposures = result["AuthService"]
+    # Sorted descending by ARR: TechnologyAdoption (3300), CompetitiveIntelligence (2200), CorporateReporting (900)
+    assert auth_exposures == [
+        ("TechnologyAdoption", 3300),
+        ("CompetitiveIntelligence", 2200),
+        ("CorporateReporting", 900),
+    ]
+    assert sum(arr for _, arr in auth_exposures) == 6400
