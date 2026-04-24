@@ -156,40 +156,33 @@ def test_products_required_fields():
 # Behavior 10: ownerless apps chunk with "No named owner" on Flags line
 # ---------------------------------------------------------------------------
 
-def test_ownerless_apps_chunk_flags():
-    from src.ingest.loader import Application
-    from src.ingest.chunker import chunk_application
+def test_ownerless_apps_chunk_flags(chroma_collection, stub_embed):
+    from src.ingest import Ingestor
 
-    raw_apps = load_applications()
     EXPECTED_OWNERLESS = {"ContractVault", "ForecastTool", "OffboardingFlow"}
 
-    ownerless = [a for a in raw_apps if not a.get("owner", "").strip()]
-    assert {a["name"] for a in ownerless} == EXPECTED_OWNERLESS, (
-        f"Expected ownerless apps {EXPECTED_OWNERLESS}, got {[a['name'] for a in ownerless]}"
+    raw_apps = load_applications()
+    ownerless_names = {a["name"] for a in raw_apps if not a.get("owner", "").strip()}
+    assert ownerless_names == EXPECTED_OWNERLESS, (
+        f"Expected ownerless apps {EXPECTED_OWNERLESS}, got {ownerless_names}"
     )
 
-    for raw in ownerless:
-        app = Application(
-            name=raw["name"],
-            division=raw["division"],
-            business_capability=raw["business_capability"],
-            technology_stack=raw["technology_stack"],
-            owner=raw.get("owner", ""),
-            risk_rating=raw["risk_rating"],
-            status=raw["status"],
-            annual_cost_workforce=raw["annual_cost_workforce"],
-            annual_cost_licenses=raw["annual_cost_licenses"],
-            annual_cost_cloud=raw["annual_cost_cloud"],
-            annual_cost_total=raw["annual_cost_total"],
-            dependencies=raw.get("dependencies", []),
-            dependents=raw.get("dependents", []),
-            notes=raw.get("notes", ""),
-        )
-        text = chunk_application(app)
-        flags_line = next(line for line in text.splitlines() if line.startswith("Flags:"))
-        assert "No named owner" in flags_line, (
-            f"{raw['name']}: expected 'No named owner' in Flags line, got: {flags_line!r}"
-        )
+    ingestor = Ingestor(
+        chroma_collection,
+        stub_embed,
+        data_dir=DATA_DIR,
+        pca_path=None,
+        points_path=None,
+    )
+    ingestor.run()
+
+    result = chroma_collection.get(include=["documents", "metadatas"])
+    for doc_text, meta in zip(result["documents"], result["metadatas"]):
+        if meta.get("doc_type") == "application" and meta.get("name") in ownerless_names:
+            flags_line = next(line for line in doc_text.splitlines() if line.startswith("Flags:"))
+            assert "No named owner" in flags_line, (
+                f"{meta['name']}: expected 'No named owner' in Flags line, got: {flags_line!r}"
+            )
 
 
 

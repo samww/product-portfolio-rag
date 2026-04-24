@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from src.ingest.loader import Application, Product
+from src.ingest._loader import Application, Product
 
 _RISK_ORDER = {"Critical": 4, "High": 3, "Medium": 2, "Low": 1, "Unknown": 0}
 

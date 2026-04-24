@@ -8,14 +8,14 @@ from typing import Callable
 import chromadb
 import numpy as np
 
-from src.ingest.chunker import chunk_application, chunk_product
-from src.ingest.indexer import index_documents
-from src.ingest.joiner import (
+from src.ingest._chunker import chunk_application, chunk_product
+from src.ingest._indexer import index_documents
+from src.ingest._joiner import (
     compute_app_arr_at_risk,
     compute_app_product_exposures,
     enrich_products,
 )
-from src.ingest.loader import load_applications, load_products
+from src.ingest._loader import load_applications, load_products
 
 
 @dataclass

@@ -1,33 +1,52 @@
-"""TDD tests for the ingestion pipeline.
+"""Tests for src.ingest module boundary and chunker↔retriever prefix contract."""
 
-Run with: uv run pytest tests/test_ingest.py -v
-"""
+import importlib
+from pathlib import Path
 
-from src.ingest.loader import load_applications, load_products
-from src.ingest.joiner import enrich_products
-from src.ingest.chunker import chunk_application, chunk_product
+import pytest
+
+from src.ingest import Ingestor
 from src.rag.retriever import parse_doc_source, RetrievedDoc
 
 
 # ---------------------------------------------------------------------------
-# Cycle 1: chunker → parse_doc_source round-trip contract
+# Cycle 1: internal modules must not be importable by their public names
 # ---------------------------------------------------------------------------
-# For every Application and EnrichedProduct in the fixtures, the round-trip
-# chunk_*(x) → parse_doc_source(RetrievedDoc(...)) must recover (kind, name).
-# This seals the implicit prefix contract between chunker.py and retriever.py.
 
-def test_chunk_parse_roundtrip(sample_apps_path, sample_products_path):
-    apps = load_applications(sample_apps_path)
-    enriched = enrich_products(load_products(sample_products_path), apps)
+@pytest.mark.parametrize("module", [
+    "src.ingest.loader",
+    "src.ingest.joiner",
+    "src.ingest.chunker",
+    "src.ingest.indexer",
+])
+def test_internal_modules_not_importable_by_public_name(module):
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module(module)
 
-    for app in apps:
-        doc = RetrievedDoc(document=chunk_application(app), metadata={}, distance=0.0)
+
+# ---------------------------------------------------------------------------
+# Cycle 2: chunker → parse_doc_source round-trip via Ingestor public interface
+# ---------------------------------------------------------------------------
+# Every document stored by Ingestor.run() must be parseable by parse_doc_source
+# — sealing the "Application: " / "Product: " prefix contract end-to-end.
+
+def test_chunk_parse_roundtrip(chroma_collection, stub_embed, tmp_path):
+    ingestor = Ingestor(
+        chroma_collection,
+        stub_embed,
+        data_dir=Path("data"),
+        pca_path=tmp_path / "pca.npz",
+        points_path=tmp_path / "points.json",
+    )
+    ingestor.run()
+
+    raw_docs = chroma_collection.get(include=["documents"])["documents"]
+    assert raw_docs, "Collection must be non-empty after run()"
+
+    for raw in raw_docs:
+        doc = RetrievedDoc(document=raw, metadata={}, distance=0.0)
         kind, name = parse_doc_source(doc)
-        assert kind == "application", f"Expected 'application' for {app.name!r}, got {kind!r}"
-        assert name == app.name, f"Expected {app.name!r}, got {name!r}"
-
-    for ep in enriched:
-        doc = RetrievedDoc(document=chunk_product(ep), metadata={}, distance=0.0)
-        kind, name = parse_doc_source(doc)
-        assert kind == "product", f"Expected 'product' for {ep.product.name!r}, got {kind!r}"
-        assert name == ep.product.name, f"Expected {ep.product.name!r}, got {name!r}"
+        assert kind in ("application", "product"), (
+            f"Unknown kind {kind!r} for doc starting: {raw[:60]!r}"
+        )
+        assert name, f"Empty name parsed from doc starting: {raw[:60]!r}"

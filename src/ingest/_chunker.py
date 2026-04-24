@@ -1,7 +1,12 @@
-"""Format application and enriched product records as labelled text blocks for embedding."""
+"""Format application and enriched product records as labelled text blocks for embedding.
 
-from src.ingest.loader import Application
-from src.ingest.joiner import EnrichedProduct
+Prefix contract: the "Application: " and "Product: " prefixes on the first line of every
+chunk are parsed by src.rag.retriever.parse_doc_source; the round-trip is asserted by
+tests/test_ingest.py::test_chunk_parse_roundtrip.
+"""
+
+from src.ingest._loader import Application
+from src.ingest._joiner import EnrichedProduct
 
 
 def _app_flags(app: Application) -> str:
