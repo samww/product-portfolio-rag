@@ -41,3 +41,4 @@ This section gives an overview of the current feature being developed. See the l
 - [Frontend: architecture & component map](docs/agent/frontend.md) — routing, pages, components, types, test conventions, backend communication
 - [Data model](docs/agent/data-model.md) — schemas, key risk scenarios, where to find full inventory
 - [API reference](docs/agent/api.md) — endpoints, request/response shapes, SSE format
+- [Deployment](docs/agent/deployment.md) — deploy script, Dockerfile constraints, Node version requirements, MCR mirror limitations

@@ -120,14 +120,20 @@ cd src/frontend && npx vitest run
 
 ```
 src/
-  ingest/         # loader, joiner, chunker, indexer
-  rag/            # retriever, generator, prompts, models
-    summary/      # SummaryService — ports & adapters for /summarise composition
-  api/            # FastAPI app, routes, API-layer models
-  frontend/       # React + Vite frontend
+  ingest/
+    ingestor.py       # Ingestor class — public entrypoint orchestrating the full pipeline
+    pca.py            # PCA reduction for 3D embedding visualisation
+    _loader.py        # (internal) JSON → typed records
+    _joiner.py        # (internal) enrich products; compute ROI, risk, ARR-at-risk, exposures
+    _chunker.py       # (internal) format records as embeddable text
+    _indexer.py       # (internal) embed + upsert into ChromaDB; produce PCA artifact
+  rag/                # retriever, generator, prompts, models
+    summary/          # SummaryService — ports & adapters for /summarise composition
+  api/                # FastAPI app, routes, API-layer models
+  frontend/           # React + Vite frontend
 data/
-  applications.json     # 30 application records (source of truth)
-  products.json         # 14 product records
+  applications.json   # 30 application records (source of truth)
+  products.json       # 14 product records
 scripts/
   ingest.py           # ingestion entry point
   start.sh            # container entrypoint (ingests on first start; subsequent starts are no-ops)
@@ -135,10 +141,11 @@ scripts/
   setup_auth.ps1      # enable Easy Auth on deployed app
   validate_data.py    # validate data/*.json integrity
 tests/
-  fixtures/       # 5-app and 3-product subsets for fast test runs
+  fixtures/           # 5-app and 3-product subsets for fast test runs
 docs/
-  agent/          # concise reference docs loaded by AI agents during development
-  overview/       # background reading — architecture decisions, dependency graphs
+  agent/              # concise reference docs loaded by AI agents during development
+  overview/           # architecture decisions, dependency graphs
+  background/         # build plan, demo script, tutorial, CV context
 ```
 
 ## Azure deployment
@@ -165,3 +172,4 @@ $env:OPENAI_API_KEY = "sk-..."
 | `docs/agent/backend.md` | Backend architecture, request flow, module map |
 | `docs/agent/data-model.md` | Application and product schemas, key risk scenarios |
 | `docs/agent/api.md` | Endpoint signatures, request/response shapes, SSE format |
+| `docs/agent/deployment.md` | Deploy script, Dockerfile constraints, Node version, MCR mirror limitations |
