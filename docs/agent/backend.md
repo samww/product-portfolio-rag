@@ -40,9 +40,10 @@ query → embed via text-embedding-3-small
 | `joiner.py` | For each product, looks up dependent apps and computes `total_app_cost`, `roi_ratio`, `highest_risk`, `apps_at_risk`, `apps_end_of_life`, `revenue_at_risk`. Also exports `compute_app_arr_at_risk` (total ARR at risk per app, used by ingest) and `compute_app_product_exposures` (per-app breakdown of contributing products, used by the API at startup). |
 | `chunker.py` | Formats each application and enriched product record as a labelled text block for embedding |
 | `indexer.py` | Embeds all 44 docs, upserts into the `"portfolio"` collection with metadata (`doc_type`, `division`, `risk_rating`, `status`, `owner`, `name`, `summary`), calls `pca.fit()` inline on the computed embeddings, and returns a `PcaArtifact`. |
-| `pca.py` | `PcaArtifact` dataclass (`mean`, `components`, `points`). `fit(embeddings, ids, metadatas) -> PcaArtifact` — mean-centres, runs `numpy.linalg.svd`, stores 3 components and per-point projected xyz. `project(artifact, embeddings) -> np.ndarray` — applies stored mean/components to new vectors. Written to `.chroma/pca.npz` (mean + components) and `src/frontend/public/points.json` (per-point metadata) by `scripts/ingest.py`. Both artifacts are wiped by `--reset`. |
+| `pca.py` | `PcaArtifact` dataclass (`mean`, `components`, `points`). `fit(embeddings, ids, metadatas) -> PcaArtifact` — mean-centres, runs `numpy.linalg.svd`, stores 3 components and per-point projected xyz. `project(artifact, embeddings) -> np.ndarray` — applies stored mean/components to new vectors. Written to `.chroma/pca.npz` (mean + components) and `src/frontend/public/points.json` (per-point metadata) by `Ingestor.run()`. Both artifacts are wiped by `reset=True`. |
+| `ingestor.py` | `Ingestor(collection, embed, *, data_dir, pca_path, points_path)` — orchestrates the full pipeline: load → enrich → chunk → index → write PCA artifacts. `run(reset=False) -> IngestResult(chunk_count, exposures)`. No-op when the collection is already populated and `reset=False`; wipes `pca.npz` and `points.json` before re-indexing when `reset=True`. `Ingestor` and `IngestResult` are exported from `src/ingest/__init__.py`. |
 
-Entry point: `scripts/ingest.py` (run with `--reset` to wipe and re-index).
+Entry point: `scripts/ingest.py` — ≤20 lines; constructs `chromadb.PersistentClient`, an `embed` callable, and delegates everything to `Ingestor(collection, embed).run(reset=args.reset)`.
 
 ### Query — `src/rag/`
 
