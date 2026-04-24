@@ -1,5 +1,5 @@
 # Stage 1: build frontend
-FROM mcr.microsoft.com/mirror/docker/library/node:20-bookworm-slim AS frontend-build
+FROM mcr.microsoft.com/mirror/docker/library/node:22-bookworm-slim AS frontend-build
 WORKDIR /app/src/frontend
 COPY src/frontend/package.json src/frontend/package-lock.json ./
 RUN npm ci
