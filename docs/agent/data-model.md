@@ -35,7 +35,7 @@ Stored as structured text in ChromaDB. ChromaDB metadata per doc: `doc_type="app
 
 ## Product schema
 
-Products are **denormalised at ingestion time** by `src/ingest/joiner.py` — dependent application details are inlined so ROI and risk queries are answered from a single retrieved document. ChromaDB metadata per doc: `doc_type="product"`.
+Products are **denormalised at ingestion time** by `src/ingest/_joiner.py` — dependent application details are inlined so ROI and risk queries are answered from a single retrieved document. ChromaDB metadata per doc: `doc_type="product"`.
 
 | Field | Source |
 |---|---|

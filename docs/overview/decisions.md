@@ -66,7 +66,7 @@ Each application record is ~300–500 tokens. Each denormalised product record i
 - Retrieval granularity should match query granularity — queries are about whole applications or whole products.
 - At 44 documents, context window space is not a constraint.
 
-**Note:** The `chunker.py` module still exists for future flexibility (e.g. if long-form documentation were added per application). It formats each record as a labelled text block, which improves embedding quality over raw JSON serialisation.
+**Note:** The `_chunker.py` module still exists for future flexibility (e.g. if long-form documentation were added per application). It formats each record as a labelled text block, which improves embedding quality over raw JSON serialisation.
 
 **Trade-offs accepted:**
 - If records were significantly longer (e.g. full runbooks), single-document retrieval would dilute embedding quality.
@@ -88,7 +88,7 @@ OpenAI offers three relevant embedding models: `text-embedding-ada-002` (legacy)
 - `text-embedding-3-large` is 5× more expensive per token — cost-conscious model selection matters as a principle even when the absolute difference is small.
 - `ada-002` is explicitly legacy as of 2024.
 
-**Mitigation:** The model name is a single constant in `src/ingest/indexer.py`, trivially swappable.
+**Mitigation:** The model name is a single constant in `src/ingest/_indexer.py`, trivially swappable.
 
 ---
 
