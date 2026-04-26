@@ -50,7 +50,7 @@ Assert-Contains `
 Assert-Contains `
     "Dockerfile: runs ingestion at build time" `
     "Dockerfile" `
-    "RUN.*python.*ingest\.py"
+    "RUN.*uv run python.*ingest\.py"
 
 Write-Host ""
 Write-Host "deploy.ps1 (build-arg)"
