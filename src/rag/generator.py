@@ -52,6 +52,7 @@ def generate_answer(
     completion = openai_client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
+        temperature=0,
     )
     answer = completion.choices[0].message.content
     return GeneratedAnswer(answer=answer, sources=sources)
@@ -70,6 +71,7 @@ def generate_summary(
             {"role": "user", "content": f"Portfolio data:\n{context}"},
         ],
         response_format=_SummaryReportLLM,
+        temperature=0,
     )
     parsed = completion.choices[0].message.parsed
     return SummaryReport(**parsed.model_dump())
@@ -89,6 +91,7 @@ def generate_answer_stream(
     stream = openai_client.chat.completions.create(
         model="gpt-4o",
         messages=messages,
+        temperature=0,
         stream=True,
     )
     for chunk in stream:

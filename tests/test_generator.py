@@ -157,6 +157,30 @@ def test_generate_summary_passes_all_docs_as_context():
     assert "ContractVault" in user_content
 
 
+def test_generate_summary_passes_temperature_zero():
+    client = _stub_summary_openai(_SUMMARY_REPORT)
+    docs = _make_docs("AuthService")
+    generate_summary(docs, client)
+    call_kwargs = client.beta.chat.completions.parse.call_args.kwargs
+    assert call_kwargs.get("temperature") == 0
+
+
+def test_generate_answer_stream_passes_temperature_zero():
+    client = _stub_streaming_openai(["Hello"])
+    docs = _make_docs("AuthService")
+    list(generate_answer_stream("test query", docs, client))
+    call_kwargs = client.chat.completions.create.call_args.kwargs
+    assert call_kwargs.get("temperature") == 0
+
+
+def test_generate_answer_passes_temperature_zero():
+    client = _stub_openai("Some answer.")
+    docs = _make_docs("AuthService")
+    generate_answer("any query", docs, client)
+    call_kwargs = client.chat.completions.create.call_args.kwargs
+    assert call_kwargs.get("temperature") == 0
+
+
 def test_generate_answer_uses_system_prompt():
     from src.rag.prompts import SYSTEM_PROMPT
     client = _stub_openai("Some answer.")
