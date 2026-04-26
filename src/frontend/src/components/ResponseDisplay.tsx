@@ -1,49 +1,61 @@
 import Markdown from 'react-markdown'
 import { RetrievedContext } from './RetrievedContext'
+import type { CitedSource } from '../lib/querySession'
 
 interface Props {
   answer: string
-  appSources: string[]
-  productSources: string[]
+  cited: CitedSource[]
+  uncited: CitedSource[]
   context: string[]
   isStreaming: boolean
 }
 
-function SourceSection({ label, sources, answer, citedClass, uncitedClass }: {
-  label: string
-  sources: string[]
-  answer: string
-  citedClass: string
-  uncitedClass: string
-}) {
-  if (sources.length === 0) return null
+const CITED_CLASS = 'bg-yellow-400/20 text-yellow-300 border-yellow-500'
+const APP_UNCITED_CLASS = 'bg-violet-900/30 text-violet-400 border-violet-800 opacity-50'
+const PRODUCT_UNCITED_CLASS = 'bg-blue-900/30 text-blue-400 border-blue-800 opacity-50'
+
+function SourceChips({ sources, citedClass }: { sources: CitedSource[]; citedClass: string }) {
   return (
-    <div>
-      <span className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-2">
-        {sources.map((source) => {
-          const cited = answer.includes(source)
-          return (
-            <span
-              key={source}
-              title={cited ? 'Cited in answer' : 'Retrieved but not directly cited'}
-              className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${cited ? citedClass : uncitedClass}`}
-            >
-              {source}
-            </span>
-          )
-        })}
-      </div>
-    </div>
+    <>
+      {sources.map((s) => (
+        <span
+          key={s.name}
+          title="Cited in answer"
+          className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${citedClass}`}
+        >
+          {s.name}
+        </span>
+      ))}
+    </>
   )
 }
 
-export function ResponseDisplay({ answer, appSources, productSources, context, isStreaming }: Props) {
+function UncitedChips({ sources, uncitedClass }: { sources: CitedSource[]; uncitedClass: string }) {
+  return (
+    <>
+      {sources.map((s) => (
+        <span
+          key={s.name}
+          title="Retrieved but not directly cited"
+          className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${uncitedClass}`}
+        >
+          {s.name}
+        </span>
+      ))}
+    </>
+  )
+}
+
+export function ResponseDisplay({ answer, cited, uncited, context, isStreaming }: Props) {
   if (!answer && !isStreaming) return null
 
-  const hasSources = appSources.length > 0 || productSources.length > 0
+  const citedApps = cited.filter((c) => c.kind === 'app')
+  const citedProducts = cited.filter((c) => c.kind === 'product')
+  const uncitedApps = uncited.filter((c) => c.kind === 'app')
+  const uncitedProducts = uncited.filter((c) => c.kind === 'product')
+
+  const hasProducts = citedProducts.length > 0 || uncitedProducts.length > 0
+  const hasApps = citedApps.length > 0 || uncitedApps.length > 0
 
   return (
     <div className="mt-6">
@@ -59,22 +71,30 @@ export function ResponseDisplay({ answer, appSources, productSources, context, i
           )}
         </div>
 
-        {hasSources && (
+        {(hasProducts || hasApps) && (
           <div className="mt-4 flex flex-col gap-3">
-            <SourceSection
-              label="Products"
-              sources={productSources}
-              answer={answer}
-              citedClass="bg-yellow-400/20 text-yellow-300 border-yellow-500"
-              uncitedClass="bg-blue-900/30 text-blue-400 border-blue-800 opacity-50"
-            />
-            <SourceSection
-              label="Applications"
-              sources={appSources}
-              answer={answer}
-              citedClass="bg-yellow-400/20 text-yellow-300 border-yellow-500"
-              uncitedClass="bg-violet-900/30 text-violet-400 border-violet-800 opacity-50"
-            />
+            {hasProducts && (
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                  Products
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <SourceChips sources={citedProducts} citedClass={CITED_CLASS} />
+                  <UncitedChips sources={uncitedProducts} uncitedClass={PRODUCT_UNCITED_CLASS} />
+                </div>
+              </div>
+            )}
+            {hasApps && (
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                  Applications
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <SourceChips sources={citedApps} citedClass={CITED_CLASS} />
+                  <UncitedChips sources={uncitedApps} uncitedClass={APP_UNCITED_CLASS} />
+                </div>
+              </div>
+            )}
           </div>
         )}
 

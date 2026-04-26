@@ -1,15 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
 import { QueryChips } from '../components/QueryChips'
 import { ResponseDisplay } from '../components/ResponseDisplay'
+import { useQuerySession } from '../lib/querySession'
 
 export function HomePage() {
   const [query, setQuery] = useState('')
-  const [answer, setAnswer] = useState('')
-  const [appSources, setAppSources] = useState<string[]>([])
-  const [productSources, setProductSources] = useState<string[]>([])
-  const [context, setContext] = useState<string[]>([])
-  const [isStreaming, setIsStreaming] = useState(false)
-  const esRef = useRef<EventSource | null>(null)
+  const { answer, cited, context, isStreaming, ask, reset, rawPayload } = useQuerySession()
+
+  const uncited = rawPayload ? [
+    ...rawPayload.app_sources
+      .filter((n) => !cited.some((c) => c.name === n))
+      .map((n) => ({ name: n, kind: 'app' as const })),
+    ...rawPayload.product_sources
+      .filter((n) => !cited.some((c) => c.name === n))
+      .map((n) => ({ name: n, kind: 'product' as const })),
+  ] : []
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -21,58 +26,14 @@ export function HomePage() {
 
   function handleChipSelect(chipQuery: string) {
     setQuery(chipQuery)
-    setAnswer('')
+    reset()
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  function submit(q: string) {
-    if (!q.trim() || isStreaming) return
-
-    esRef.current?.close()
-
-    setAnswer('')
-    setAppSources([])
-    setProductSources([])
-    setContext([])
-    setIsStreaming(true)
-
-    const es = new EventSource(`/query/stream?query=${encodeURIComponent(q)}`)
-    esRef.current = es
-
-    es.onmessage = (e) => {
-      const data: string = e.data
-      if (data.startsWith('[DONE]')) {
-        es.close()
-        setIsStreaming(false)
-        const json = data.slice('[DONE] '.length)
-        try {
-          const payload = JSON.parse(json) as {
-            app_sources: string[]
-            product_sources: string[]
-            context: string[]
-            query: string
-          }
-          setAppSources(payload.app_sources)
-          setProductSources(payload.product_sources)
-          setContext(payload.context)
-        } catch {
-          // malformed payload — ignore
-        }
-      } else {
-        setAnswer((prev) => prev + (JSON.parse(data) as string))
-      }
-    }
-
-    es.onerror = () => {
-      es.close()
-      setIsStreaming(false)
-    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      submit(query)
+      ask(query)
     }
   }
 
@@ -102,7 +63,7 @@ export function HomePage() {
           <div className="flex items-center justify-between px-3 pb-3">
             <span className="text-xs text-slate-500">Enter to send · Shift+Enter for newline</span>
             <button
-              onClick={() => submit(query)}
+              onClick={() => ask(query)}
               disabled={isStreaming}
               className="px-5 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-lg font-semibold text-sm transition-colors cursor-pointer shadow-md shadow-violet-900/50"
             >
@@ -113,12 +74,11 @@ export function HomePage() {
 
         <ResponseDisplay
           answer={answer}
-          appSources={appSources}
-          productSources={productSources}
+          cited={cited}
+          uncited={uncited}
           context={context}
           isStreaming={isStreaming}
         />
     </div>
   )
 }
-

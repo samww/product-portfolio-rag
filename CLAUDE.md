@@ -30,7 +30,7 @@ This section gives an overview of the current feature being developed. See the l
 
 | # | Slice | Issue | Status |
 |---|---|---|---|
-| 1 | Land `querySession/` package and migrate HomePage end-to-end | #48 | ⏳ Todo |
+| 1 | Land `querySession/` package and migrate HomePage end-to-end | #48 | ✅ Complete |
 | 2 | Migrate EmbeddingsPage to `useQuerySession`; trim EmbeddingsPage tests | #49 | ⏳ Todo |
 
 **Previous feature: Deepen the ingest module (`Ingestor` class)** — #42 (✅ Complete: #43, #44, #45, #46)

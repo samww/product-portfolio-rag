@@ -31,12 +31,12 @@ Tests that need routing context use `createMemoryRouter(routes)` (full app) or `
 
 ### HomePage (`/`)
 
-Query interface. State: `query`, `answer`, `appSources`, `productSources`, `context`, `isStreaming`, `esRef`.
+Query interface. Local state: `query` (textarea value). SSE streaming state managed by `useQuerySession()` from `src/lib/querySession/`.
 
-- Streams answer tokens from `GET /query/stream?query=…` via `EventSource`
-- Final SSE message: `[DONE] {"app_sources":[], "product_sources":[], "context":[], "query":""}` — parsed to populate source state
-- Enter submits; Shift+Enter inserts newline
-- `QueryChips.onSelect` populates the textarea and clears the previous answer
+- `useQuerySession()` returns `{ answer, cited, context, isStreaming, rawPayload, ask, cancel, reset }`
+- `ask(query)` submits; `reset()` clears the previous answer; Enter submits, Shift+Enter inserts newline
+- `QueryChips.onSelect` populates the textarea and calls `reset()` to clear the previous answer
+- `uncited` sources derived from `rawPayload` (all returned sources minus `cited`) and passed to `ResponseDisplay`
 
 ### SummaryPage (`/summary`)
 
@@ -70,14 +70,58 @@ The page is split across two files:
 | `Navbar` | Persistent top nav. Hamburger on mobile. `aria-current="page"` on active link. |
 | `Layout` | `Navbar` + `<Outlet />` wrapper. Owns the `min-h-screen bg-slate-950` shell. |
 | `QueryChips` | Collapsible suggested-query chips grouped by category (Risk, ROI, Governance, Explore). `onSelect(query: string)` callback. |
-| `ResponseDisplay` | Renders streamed Markdown answer + source pills. Cited sources = yellow; uncited = blue/violet. Contains `RetrievedContext`. |
+| `ResponseDisplay` | Renders streamed Markdown answer + source pills. Props: `{ answer, cited: CitedSource[], uncited: CitedSource[], context, isStreaming }`. Cited = yellow; uncited apps = violet, uncited products = blue. Contains `RetrievedContext`. |
 | `RetrievedContext` | Collapsible panel showing raw retrieved document chunks. Hidden by default. |
 | `SummaryReport` | Risk summary table (desktop) + card list (mobile). Expandable rows show product exposures. Risk pills colour-coded by severity. Sorts findings by `revenue_at_risk_000s` descending. |
 | `EmbeddingsQueryBar` | Query input bound to `?q=` search param (300ms debounce), Ask button that triggers SSE stream, streamed answer display, and `QueryChips` reuse. Exported from `EmbeddingsPage.tsx`. |
 
 ---
 
+## Lib
+
+### `querySession/` — `src/lib/querySession/`
+
+Ports-and-adapters SSE state machine. Currently consumed by HomePage; EmbeddingsPage migration is slice 2 (#49).
+
+| File | Role |
+|---|---|
+| `ports.ts` | `SseTransport`, `SseEvent`, `DonePayload`, `CitedSource` types |
+| `session.ts` | `QuerySession` class — no React, no DOM, no `EventSource` |
+| `filter.ts` | `filterCitations(answer, candidates)` — pure substring filter |
+| `adapters.ts` | `eventSourceTransport` (production) · `InMemoryTransport` (test driver) |
+| `useQuerySession.ts` | React hook; calls `session.cancel()` on unmount |
+| `index.ts` | Barrel |
+| `session.test.ts` | Pure node-env unit tests — no jsdom, no `vi.stubGlobal` |
+
+`eventSourceTransport` is the **only** file in the module that mentions `EventSource`, `[DONE]`, or `JSON.parse(data)`.
+
+`InMemoryTransport` provides `emitToken(value)`, `emitDone(payload)`, `emitError(cause?)` driver methods, plus observable `lastUrl` and `closed` fields for assertions.
+
+`QuerySession` public API:
+```ts
+constructor(transport: SseTransport, onChange: (s: QuerySessionState) => void)
+ask(query: string): void   // URL-encodes query, auto-cancels prior stream, resets state
+cancel(): void             // idempotent; no-op if not streaming
+reset(): void              // clears all state, closes transport
+snapshot(): QuerySessionState
+```
+
+`useQuerySession(transport?)` returns `QuerySessionState & { ask, cancel, reset }`.
+
+---
+
 ## Key types
+
+From `src/lib/querySession/ports.ts` and `session.ts`:
+
+```ts
+interface CitedSource { name: string; kind: 'app' | 'product' }
+interface DonePayload { app_sources: string[]; product_sources: string[]; context: string[]; query: string }
+interface QuerySessionState {
+  answer: string; isStreaming: boolean; cited: CitedSource[]; context: string[];
+  rawPayload: DonePayload | null; error: unknown | null
+}
+```
 
 From `src/components/SummaryReport.tsx`:
 
@@ -125,7 +169,7 @@ No shared utils or constants file — types live with their component, queries a
 ### Mocking patterns
 
 ```ts
-// EventSource (streaming)
+// EventSource (streaming) — still used by EmbeddingsPage tests
 function FakeEventSource(this, url) { this.onmessage = null; this.onerror = null; this.close = () => {} }
 vi.stubGlobal('EventSource', FakeEventSource)
 
@@ -137,6 +181,22 @@ vi.stubGlobal('scrollTo', vi.fn())
 
 // Cleanup (afterEach)
 vi.unstubAllGlobals(); vi.restoreAllMocks()
+```
+
+### Pure session tests (no jsdom)
+
+`session.test.ts` declares `// @vitest-environment node` at the top — no jsdom, no global stubs. Use `InMemoryTransport` to drive the state machine synchronously:
+
+```ts
+import { QuerySession } from '../lib/querySession/session'
+import { InMemoryTransport } from '../lib/querySession/adapters'
+
+const transport = new InMemoryTransport()
+const session = new QuerySession(transport, vi.fn())
+session.ask('q')
+transport.emitToken('hello')
+transport.emitDone({ app_sources: ['Auth'], product_sources: [], context: [], query: 'q' })
+expect(session.snapshot().cited).toEqual([...])
 ```
 
 ### Assertion style
