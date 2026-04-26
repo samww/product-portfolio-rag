@@ -83,13 +83,16 @@ On first startup the container ingests data into ChromaDB (~10 seconds). Subsequ
 # 1. Configure environment
 cp .env.example .env          # add your OPENAI_API_KEY
 
-# 2. Ingest data into ChromaDB
+# 2. Install Python dependencies
+uv sync
+
+# 3. Ingest data into ChromaDB
 uv run python scripts/ingest.py --reset
 
-# 3. Start the API
+# 4. Start the API
 uv run uvicorn src.api.main:app --reload
 
-# 4. Start the frontend (separate terminal)
+# 5. Start the frontend (separate terminal)
 cd src/frontend
 npm install
 npm run dev
@@ -145,12 +148,18 @@ tests/
 docs/
   agent/              # concise reference docs loaded by AI agents during development
   overview/           # architecture decisions, dependency graphs
-  background/         # build plan, demo script, tutorial, CV context
 ```
 
 ## Azure deployment
 
-Two PowerShell scripts handle deployment to Azure Container Apps:
+**Prerequisites:** [az CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli), an Azure subscription.
+
+```bash
+az login
+az extension add --name containerapp
+```
+
+**Windows (PowerShell)**
 
 ```powershell
 # Deploy (creates resource group, builds image in ACR, creates/updates Container App)
@@ -161,7 +170,18 @@ $env:OPENAI_API_KEY = "sk-..."
 .\scripts\setup_auth.ps1
 ```
 
-`deploy.ps1` is idempotent — re-running it on an existing deployment updates the running app with a fresh image. Default app name is `portfolio-rag` in resource group `rg-portfolio-rag` (UK South); override with `$env:APP_NAME`, `$env:RESOURCE_GROUP`, `$env:LOCATION`.
+**Mac / Linux (bash)**
+
+```bash
+# Deploy (creates resource group, builds image in ACR, creates/updates Container App)
+export OPENAI_API_KEY="sk-..."
+bash scripts/deploy-mac.sh
+
+# Enable Easy Auth (idempotent — reuses existing Entra app registration on re-run)
+bash scripts/setup_auth-mac.sh
+```
+
+`deploy` is idempotent — re-running it on an existing deployment updates the running app with a fresh image. Default app name is `portfolio-rag` in resource group `rg-portfolio-rag` (UK South); override with `APP_NAME`, `RESOURCE_GROUP`, `LOCATION` (env vars on both platforms).
 
 ## Docs
 

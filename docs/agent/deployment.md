@@ -2,7 +2,7 @@
 
 ## How deploys work
 
-`scripts/deploy.ps1` runs `az acr build` — the Docker image is built in Azure's cloud (ACR Tasks), not locally. No local Docker daemon is required.
+`scripts/deploy.ps1` (Windows) / `scripts/deploy-mac.sh` (Mac/Linux) runs `az acr build` — the Docker image is built in Azure's cloud (ACR Tasks), not locally. No local Docker daemon is required.
 
 ## Dockerfile: Node base image
 
@@ -32,7 +32,7 @@ Node 22 is not mirrored. Attempting `node:22-slim` or `node:22-bookworm-slim` vi
 
 ## Deploy script
 
-`scripts/deploy.ps1` — idempotent, re-runnable. Steps:
+`scripts/deploy.ps1` / `scripts/deploy-mac.sh` — idempotent, re-runnable. Steps:
 
 1. Create resource group + ACR (Basic SKU, admin enabled)
 2. Build image in ACR with a timestamp tag (`yyyyMMddHHmmss`)
