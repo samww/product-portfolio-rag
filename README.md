@@ -190,6 +190,7 @@ bash scripts/setup_auth-mac.sh
 | `docs/overview/decisions.md` | Architecture Decision Records — ChromaDB vs Azure AI Search, denormalised products, no chunking, embedding model choice, deterministic enrichment in `/summarise` |
 | `docs/overview/dependencies.md` | Mermaid dependency diagrams for all 30 applications and 14 products |
 | `docs/agent/backend.md` | Backend architecture, request flow, module map |
+| `docs/agent/frontend.md` | Frontend architecture, routing, component map, test conventions |
 | `docs/agent/data-model.md` | Application and product schemas, key risk scenarios |
 | `docs/agent/api.md` | Endpoint signatures, request/response shapes, SSE format |
 | `docs/agent/deployment.md` | Deploy script, Dockerfile constraints, Node version, MCR mirror limitations |
