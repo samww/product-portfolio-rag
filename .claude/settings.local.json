@@ -58,7 +58,11 @@
       "PowerShell(powershell.exe -NoProfile -NonInteractive -File \"tests\\\\test_infra.ps1\"; exit $LASTEXITCODE)",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
       "Bash(EmbeddingsScene.tsx)",
-      "Bash(components/EmbeddingsQueryBar.tsx)"
+      "Bash(components/EmbeddingsQueryBar.tsx)",
+      "PowerShell(Set-Location E:\\\\Production\\\\product-portfolio-rag; powershell.exe -NoProfile -NonInteractive -File tests\\\\test_infra.ps1 2>&1 | Select-Object -First 40)",
+      "PowerShell(Set-Location E:\\\\Production\\\\product-portfolio-rag; powershell.exe -NoProfile -NonInteractive -File tests\\\\test_infra.ps1 2>&1 | Select-Object -First 15)",
+      "PowerShell(Set-Location E:\\\\Production\\\\product-portfolio-rag; powershell.exe -NoProfile -NonInteractive -File tests\\\\test_infra.ps1 2>&1 | Select-Object -First 20)",
+      "PowerShell(Set-Location E:\\\\Production\\\\product-portfolio-rag; powershell.exe -NoProfile -NonInteractive -File tests\\\\test_infra.ps1 2>&1 | Select-Object -First 12)"
     ]
   }
 }
