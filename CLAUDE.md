@@ -16,24 +16,16 @@
 - Run backend tests: `uv run pytest`
 - Start API: `uv run uvicorn src.api.main:app --reload`
 - Re-ingest data: `uv run python scripts/ingest.py --reset`
-- Frontend tests: `cd src/frontend && npx vitest run` — must run from `src/frontend/`, not repo root
-- Frontend dev server: `cd src/frontend && npm run dev` — must run from `src/frontend/`, not repo root
-- Frontend build: `cd src/frontend && npm run build` — must run from `src/frontend/`, not repo root
+All frontend commands must run from `src/frontend/`, not repo root:
+- Frontend tests: `cd src/frontend && npx vitest run`
+- Frontend dev server: `cd src/frontend && npm run dev`
+- Frontend build: `cd src/frontend && npm run build`
 - Docker build: `docker compose build`
 - Docker run: `docker compose up`
 
 ## Slices
 
 No feature currently in progress.
-
-**Previous feature: Deepen the SSE streaming state machine (`querySession/` package)** — #47 (✅ Complete: #48, #49)
-
-| # | Slice | Issue | Status |
-|---|---|---|---|
-| 1 | Land `querySession/` package and migrate HomePage end-to-end | #48 | ✅ Complete |
-| 2 | Migrate EmbeddingsPage to `useQuerySession`; trim EmbeddingsPage tests | #49 | ✅ Complete |
-
-**Previous feature: Deepen the ingest module (`Ingestor` class)** — #42 (✅ Complete: #43, #44, #45, #46)
 
 ## Agent docs (load as needed)
 

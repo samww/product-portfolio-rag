@@ -18,17 +18,7 @@ FROM node:22-slim AS frontend-build
 
 ### Why not the MCR mirror
 
-`mcr.microsoft.com/mirror/docker/library/node` only carries tags up to Node 20:
-
-```
-14, 14-alpine, 14-slim, 16, 16-alpine, 16-bullseye, 16-bullseye-slim,
-16-buster, 18, 18-alpine, 18-bullseye-slim, 18-buster, 18-buster-slim,
-20, 20-bookworm-slim, 20-bullseye, 20-bullseye-slim, 20-buster, 20-buster-slim
-```
-
-Node 22 is not mirrored. Attempting `node:22-slim` or `node:22-bookworm-slim` via the MCR mirror will fail with `manifest unknown`.
-
-`az acr build` can pull from Docker Hub directly without rate-limit issues at personal deploy cadence, so no mirror is needed.
+`mcr.microsoft.com/mirror/docker/library/node` only carries tags up to Node 20 — `node:22-slim` fails with `manifest unknown`. `az acr build` pulls from Docker Hub directly without rate-limit issues at personal deploy cadence.
 
 ## Deploy script
 

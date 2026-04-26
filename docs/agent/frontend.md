@@ -1,12 +1,6 @@
 # Frontend — architecture & component map
 
-## Stack
-
-React 19 · TypeScript · Tailwind CSS v4 · Vite · react-router-dom v7 · Vitest + React Testing Library
-
 Build output: `npm run build` compiles to `src/api/static/` (consumed by FastAPI `StaticFiles` mount in production). Dev server proxies `/query`, `/health`, `/summarise`, and `/embeddings/project` to `http://localhost:8000`.
-
----
 
 ## Routing
 
@@ -21,11 +15,10 @@ Layout          ← shared wrapper: Navbar + <Outlet />
 
 **Layout** provides the dark `bg-slate-950` shell and the persistent `Navbar`. Pages only need to render their own content div.
 
-**Navbar** — top bar with links to all three routes. Desktop: inline links. Mobile: hamburger toggles a dropdown. Uses `NavLink` with `aria-current="page"` on the active route. Mobile menu closes on any link click.
+**Navbar** — top bar with links to all three routes. Uses `NavLink` with `aria-current="page"` on the active route. Hamburger on mobile.
 
 Tests that need routing context use `createMemoryRouter(routes)` (full app) or `MemoryRouter` (isolated component).
 
----
 
 ## Pages
 
@@ -57,12 +50,8 @@ Risk report page. State: `summary: SummaryReportData | null`, `isSummarising`.
 - Lines drawn from `queryXyz` to cited points (violet) and retrieved-but-not-cited points (grey); `linesVisible` is `rawPayload !== null`
 - EmbeddingsPage is lazy-loaded (`React.lazy`) so Three.js doesn't affect the home-page bundle
 
-The page is split across three files:
-- `pages/EmbeddingsPage.tsx` — data-fetch, session wiring, `DivisionLegend`, teaching panel (182 LOC)
-- `pages/EmbeddingsScene.tsx` — all Three.js sub-components: `GradientBackground`, `CameraFit`, `AutoRotate`, `Point`, `QueryPoint`, `Scene`, `QUERY_COLOR`
-- `pages/EmbeddingsPage.utils.ts` — pure helper functions and types (see Key types below)
+Split across: `EmbeddingsPage.tsx` (data-fetch, session wiring, legend), `EmbeddingsScene.tsx` (Three.js sub-components), `EmbeddingsPage.utils.ts` (pure helpers/types).
 
----
 
 ## Components
 
@@ -76,7 +65,6 @@ The page is split across three files:
 | `SummaryReport` | Risk summary table (desktop) + card list (mobile). Expandable rows show product exposures. Risk pills colour-coded by severity. Sorts findings by `revenue_at_risk_000s` descending. |
 | `EmbeddingsQueryBar` | Query input bound to `?q=` search param (300ms debounce), Ask button, streamed answer display, and `QueryChips` reuse. Lives in `src/components/EmbeddingsQueryBar.tsx`. |
 
----
 
 ## Lib
 
@@ -109,52 +97,6 @@ snapshot(): QuerySessionState
 
 `useQuerySession(transport?)` returns `QuerySessionState & { ask, cancel, reset }`.
 
----
-
-## Key types
-
-From `src/lib/querySession/ports.ts` and `session.ts`:
-
-```ts
-interface CitedSource { name: string; kind: 'app' | 'product' }
-interface DonePayload { app_sources: string[]; product_sources: string[]; context: string[]; query: string }
-interface QuerySessionState {
-  answer: string; isStreaming: boolean; cited: CitedSource[]; context: string[];
-  rawPayload: DonePayload | null; error: unknown | null
-}
-```
-
-From `src/components/SummaryReport.tsx`:
-
-```ts
-interface ProductExposure   { product: string; arr_000s: number }
-interface RiskFinding        { application: string; risk_rating: string; issue: string;
-                               revenue_at_risk_000s: number; recommended_action: string;
-                               priority: string; product_exposures: ProductExposure[] }
-interface GovernanceGap      { application: string; issue: string; recommended_action: string }
-interface SummaryReportData  { overall_health: string; executive_summary: string;
-                               critical_risks: RiskFinding[]; governance_gaps: GovernanceGap[];
-                               total_apps_reviewed: number; total_arr_at_risk_000s: number }
-```
-
-From `src/pages/EmbeddingsPage.utils.ts`:
-
-```ts
-interface EmbeddingPoint {
-  id: string; doc_type: string; division: string; name: string; summary: string;
-  risk_rating: string; cost_000s: number; arr_000s: number;
-  projected_xyz: [number, number, number]
-}
-interface EmbeddingPointWithTopK extends EmbeddingPoint {
-  cited: boolean  // true if name appeared in the SSE answer's app_sources / product_sources
-}
-```
-
-Helper functions in `EmbeddingsPage.utils.ts`: `mergeTopKIntoPoints(points, citedIds)`, `buildIsolationFilter(selectedId, points)`, `divisionToColor(division)`, `docTypeToShape(doc_type)`, `pointToSize(doc_type, value)`.
-
-No shared utils or constants file — types live with their component, queries are hardcoded in `QueryChips`.
-
----
 
 ## Test conventions
 
@@ -169,42 +111,9 @@ No shared utils or constants file — types live with their component, queries a
 
 ### Mocking patterns
 
-```ts
-// fetch
-vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: () => Promise.resolve(data) }))
-
-// window.scrollTo
-vi.stubGlobal('scrollTo', vi.fn())
-
-// Cleanup (afterEach)
-vi.unstubAllGlobals(); vi.restoreAllMocks()
-```
-
-For pages that use `useQuerySession`, inject an `InMemoryTransport` via the optional `transport` prop rather than stubbing `EventSource` globally:
-
-```ts
-const transport = new InMemoryTransport()
-render(<EmbeddingsPage transport={transport} />)
-fireEvent.click(screen.getByRole('button', { name: /ask/i }))
-act(() => { transport.emitToken('Hello') })
-act(() => { transport.emitDone({ app_sources: ['Auth'], product_sources: [], context: [], query: 'q' }) })
-```
-
-### Pure session tests (no jsdom)
-
-`session.test.ts` declares `// @vitest-environment node` at the top — no jsdom, no global stubs. Use `InMemoryTransport` to drive the state machine synchronously:
-
-```ts
-import { QuerySession } from '../lib/querySession/session'
-import { InMemoryTransport } from '../lib/querySession/adapters'
-
-const transport = new InMemoryTransport()
-const session = new QuerySession(transport, vi.fn())
-session.ask('q')
-transport.emitToken('hello')
-transport.emitDone({ app_sources: ['Auth'], product_sources: [], context: [], query: 'q' })
-expect(session.snapshot().cited).toEqual([...])
-```
+- `fetch` and `scrollTo`: stub with `vi.stubGlobal`; clean up in `afterEach` with `vi.unstubAllGlobals(); vi.restoreAllMocks()`
+- Pages using `useQuerySession`: inject `InMemoryTransport` via the optional `transport` prop.
+- Pure session tests (`session.test.ts`): `// @vitest-environment node` at top, drive with `InMemoryTransport` synchronously.
 
 ### Assertion style
 
@@ -213,15 +122,4 @@ expect(session.snapshot().cited).toEqual([...])
 - Routing assertions: check `href` attribute on `<a>` tags and `aria-current="page"` for active state
 - Risk pill colour: `expect(pill.className).toMatch(/red/)` (Tailwind class name contains the colour word)
 
----
 
-## Backend communication
-
-| Endpoint | Method | Used by | Notes |
-|---|---|---|---|
-| `/query/stream` | GET + query param | HomePage, EmbeddingsPage | SSE via `EventSource`; tokens arrive as JSON strings; final frame is `[DONE] {json}` |
-| `/summarise` | POST (no body) | SummaryPage | Returns `SummaryReportData` JSON |
-| `/embeddings/project` | POST | EmbeddingsPage | Body `{query, top_k}`. Returns `{projected_xyz, top_k_ids}`. Used to place the query point in the scatter. |
-| `/points.json` | GET (static) | EmbeddingsPage | Served directly from `public/` in dev and `api/static/` in prod; no proxy needed |
-
-Vite proxy forwards `/query`, `/health`, `/summarise`, and `/embeddings/project` to `http://localhost:8000` in dev. `/embeddings` itself is not proxied — the SPA route is served by the dev server, and `/points.json` is served from `public/` without a proxy.

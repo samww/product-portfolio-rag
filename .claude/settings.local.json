@@ -56,7 +56,9 @@
       "Bash(git *)",
       "Bash(xargs cat *)",
       "PowerShell(powershell.exe -NoProfile -NonInteractive -File \"tests\\\\test_infra.ps1\"; exit $LASTEXITCODE)",
-      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(EmbeddingsScene.tsx)",
+      "Bash(components/EmbeddingsQueryBar.tsx)"
     ]
   }
 }
