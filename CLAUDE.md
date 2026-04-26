@@ -24,14 +24,14 @@
 
 ## Slices
 
-This section gives an overview of the current feature being developed. See the linked issue for full requirements and implementation decisions.
+No feature currently in progress.
 
-**Current feature: Deepen the SSE streaming state machine (`querySession/` package)** — #47
+**Previous feature: Deepen the SSE streaming state machine (`querySession/` package)** — #47 (✅ Complete: #48, #49)
 
 | # | Slice | Issue | Status |
 |---|---|---|---|
 | 1 | Land `querySession/` package and migrate HomePage end-to-end | #48 | ✅ Complete |
-| 2 | Migrate EmbeddingsPage to `useQuerySession`; trim EmbeddingsPage tests | #49 | ⏳ Todo |
+| 2 | Migrate EmbeddingsPage to `useQuerySession`; trim EmbeddingsPage tests | #49 | ✅ Complete |
 
 **Previous feature: Deepen the ingest module (`Ingestor` class)** — #42 (✅ Complete: #43, #44, #45, #46)
 

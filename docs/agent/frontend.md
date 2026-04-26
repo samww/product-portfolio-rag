@@ -47,18 +47,19 @@ Risk report page. State: `summary: SummaryReportData | null`, `isSummarising`.
 
 ### EmbeddingsPage (`/embeddings`)
 
-3D embedding scatter page. State: `rawPoints`, `points`, `queryXyz`, `loading`, `error`, `answer`, `isStreaming`, `citedIds`, `esRef`.
+3D embedding scatter page. State: `rawPoints`, `points`, `queryXyz`, `loading`, `error`, `retrievedIds`, `pinned`. SSE streaming state managed by `useQuerySession()` from `src/lib/querySession/`.
 
 - On mount: fetches `/points.json` into `rawPoints`
 - URL `?q=…` is the single source of truth for the query (managed by `EmbeddingsQueryBar`)
-- When `?q=…` changes and `rawPoints` are loaded: `POST /embeddings/project` → sets `queryXyz` (the projected xyz of the query)
-- **Ask button**: fires `GET /query/stream` SSE stream; on `[DONE]`, merges `app_sources` + `product_sources` into `citedIds`
-- `cited` flag on each point: driven by `citedIds` (names cited in the answer), not by the `top_k_ids` from the projection endpoint
-- Lines drawn from `queryXyz` to all `cited` points; no separate toggle
+- When `?q=…` changes and `rawPoints` are loaded: `POST /embeddings/project` → sets `queryXyz` and `retrievedIds`
+- **Ask button**: calls `ask(query)` from the hook; `cited` from the hook drives `mergeTopKIntoPoints`
+- `cited` flag on each point: driven by `cited.map(c => c.name)` from the session, not by the projection `top_k_ids`
+- Lines drawn from `queryXyz` to cited points (violet) and retrieved-but-not-cited points (grey); `linesVisible` is `rawPayload !== null`
 - EmbeddingsPage is lazy-loaded (`React.lazy`) so Three.js doesn't affect the home-page bundle
 
-The page is split across two files:
-- `pages/EmbeddingsPage.tsx` — scene and page shell; exports `EmbeddingsQueryBar` named export
+The page is split across three files:
+- `pages/EmbeddingsPage.tsx` — data-fetch, session wiring, `DivisionLegend`, teaching panel (182 LOC)
+- `pages/EmbeddingsScene.tsx` — all Three.js sub-components: `GradientBackground`, `CameraFit`, `AutoRotate`, `Point`, `QueryPoint`, `Scene`, `QUERY_COLOR`
 - `pages/EmbeddingsPage.utils.ts` — pure helper functions and types (see Key types below)
 
 ---
@@ -73,7 +74,7 @@ The page is split across two files:
 | `ResponseDisplay` | Renders streamed Markdown answer + source pills. Props: `{ answer, cited: CitedSource[], uncited: CitedSource[], context, isStreaming }`. Cited = yellow; uncited apps = violet, uncited products = blue. Contains `RetrievedContext`. |
 | `RetrievedContext` | Collapsible panel showing raw retrieved document chunks. Hidden by default. |
 | `SummaryReport` | Risk summary table (desktop) + card list (mobile). Expandable rows show product exposures. Risk pills colour-coded by severity. Sorts findings by `revenue_at_risk_000s` descending. |
-| `EmbeddingsQueryBar` | Query input bound to `?q=` search param (300ms debounce), Ask button that triggers SSE stream, streamed answer display, and `QueryChips` reuse. Exported from `EmbeddingsPage.tsx`. |
+| `EmbeddingsQueryBar` | Query input bound to `?q=` search param (300ms debounce), Ask button, streamed answer display, and `QueryChips` reuse. Lives in `src/components/EmbeddingsQueryBar.tsx`. |
 
 ---
 
@@ -81,7 +82,7 @@ The page is split across two files:
 
 ### `querySession/` — `src/lib/querySession/`
 
-Ports-and-adapters SSE state machine. Currently consumed by HomePage; EmbeddingsPage migration is slice 2 (#49).
+Ports-and-adapters SSE state machine. Consumed by both HomePage and EmbeddingsPage.
 
 | File | Role |
 |---|---|
@@ -169,10 +170,6 @@ No shared utils or constants file — types live with their component, queries a
 ### Mocking patterns
 
 ```ts
-// EventSource (streaming) — still used by EmbeddingsPage tests
-function FakeEventSource(this, url) { this.onmessage = null; this.onerror = null; this.close = () => {} }
-vi.stubGlobal('EventSource', FakeEventSource)
-
 // fetch
 vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: () => Promise.resolve(data) }))
 
@@ -181,6 +178,16 @@ vi.stubGlobal('scrollTo', vi.fn())
 
 // Cleanup (afterEach)
 vi.unstubAllGlobals(); vi.restoreAllMocks()
+```
+
+For pages that use `useQuerySession`, inject an `InMemoryTransport` via the optional `transport` prop rather than stubbing `EventSource` globally:
+
+```ts
+const transport = new InMemoryTransport()
+render(<EmbeddingsPage transport={transport} />)
+fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+act(() => { transport.emitToken('Hello') })
+act(() => { transport.emitDone({ app_sources: ['Auth'], product_sources: [], context: [], query: 'q' }) })
 ```
 
 ### Pure session tests (no jsdom)

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom'
-import { EmbeddingsQueryBar } from '../pages/EmbeddingsPage'
+import { EmbeddingsQueryBar } from '../components/EmbeddingsQueryBar'
 
 function renderWithRouter(initialSearch = '') {
   return render(
