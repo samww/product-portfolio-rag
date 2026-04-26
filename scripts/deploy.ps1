@@ -43,6 +43,7 @@ az acr build `
     --registry $AcrName `
     --resource-group $ResourceGroup `
     --image "${AppName}:$Tag" `
+    --build-arg "OPENAI_API_KEY=$OpenAiApiKey" `
     $RepoRoot
 Assert-AzSuccess 'acr build'
 

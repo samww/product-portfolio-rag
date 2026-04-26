@@ -31,6 +31,35 @@ function Assert-NotContains($desc, $file, $pattern) {
     }
 }
 
+Write-Host "=== Slice 10: Build-time ingestion ==="
+Write-Host ""
+
+Write-Host "start.sh"
+Assert-NotContains `
+    "start.sh: does not run ingestion at runtime" `
+    "scripts/start.sh" `
+    "ingest\.py"
+
+Write-Host ""
+Write-Host "Dockerfile"
+Assert-Contains `
+    "Dockerfile: declares OPENAI_API_KEY build arg" `
+    "Dockerfile" `
+    "ARG OPENAI_API_KEY"
+
+Assert-Contains `
+    "Dockerfile: runs ingestion at build time" `
+    "Dockerfile" `
+    "RUN.*python.*ingest\.py"
+
+Write-Host ""
+Write-Host "deploy.ps1 (build-arg)"
+Assert-Contains `
+    "deploy.ps1: passes OPENAI_API_KEY as build-arg to az acr build" `
+    "scripts/deploy.ps1" `
+    "--build-arg.*OPENAI_API_KEY|OPENAI_API_KEY.*--build-arg"
+
+Write-Host ""
 Write-Host "=== Slice 9: Azure deployment ==="
 Write-Host ""
 

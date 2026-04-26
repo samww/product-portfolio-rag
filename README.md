@@ -115,8 +115,8 @@ To force a full re-index at any point: `uv run python scripts/ingest.py --reset`
 # Backend
 uv run pytest
 
-# Frontend
-cd src/frontend && npx vitest run
+# Frontend (npm install required if you skipped the local dev setup)
+cd src/frontend && npm install && npx vitest run
 ```
 
 ## Project structure
@@ -139,7 +139,7 @@ data/
   products.json       # 14 product records
 scripts/
   ingest.py           # ingestion entry point
-  start.sh            # container entrypoint (ingests on first start; subsequent starts are no-ops)
+  start.sh            # container entrypoint (starts uvicorn; ingestion runs at image build time)
   deploy.ps1          # deploy to Azure Container Apps
   setup_auth.ps1      # enable Easy Auth on deployed app
   validate_data.py    # validate data/*.json integrity

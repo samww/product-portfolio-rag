@@ -28,6 +28,11 @@ COPY data/ data/
 # Copy built frontend from Stage 1 (vite outputs to src/api/static)
 COPY --from=frontend-build /app/src/api/static src/api/static
 
+# Run ingestion at build time — bakes ChromaDB, pca.npz, and points.json into the image
+ARG OPENAI_API_KEY
+ENV OPENAI_API_KEY=${OPENAI_API_KEY}
+RUN python scripts/ingest.py --reset --points-path src/api/static/points.json
+
 # Ensure start script is executable
 RUN chmod +x scripts/start.sh
 

@@ -1,0 +1,16 @@
+.venv/
+.chroma/
+chroma_data/
+node_modules/
+src/frontend/node_modules/
+src/api/static/
+src/frontend/public/points.json
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.git/
+.env
+.envrc

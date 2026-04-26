@@ -309,6 +309,43 @@ def test_get_assets_serves_static_files():
 
 
 # ---------------------------------------------------------------------------
+# Cycle 19: GET /points.json returns a JSON array with required fields
+# ---------------------------------------------------------------------------
+
+def test_points_json_exists_in_static_dir():
+    from pathlib import Path
+    points_path = Path("src/api/static/points.json")
+    assert points_path.exists(), (
+        "points.json not found in src/api/static/ — "
+        "run: uv run python scripts/ingest.py --reset --points-path src/api/static/points.json"
+    )
+    data = json.loads(points_path.read_text())
+    assert isinstance(data, list)
+    assert len(data) > 0
+    first = data[0]
+    assert "id" in first
+    assert "division" in first
+    assert "projected_xyz" in first
+    assert len(first["projected_xyz"]) == 3
+
+
+def test_get_points_json_served_as_json_not_html():
+    from pathlib import Path
+    from fastapi.testclient import TestClient
+    from src.api.main import app
+    points_path = Path("src/api/static/points.json")
+    if not points_path.exists():
+        pytest.skip("points.json not in static dir — bake it in via Docker build or run ingestion first")
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get("/points.json")
+    assert response.status_code == 200
+    assert "application/json" in response.headers["content-type"]
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) > 0
+
+
+# ---------------------------------------------------------------------------
 # Cycle 16: POST /embeddings/project returns 503 when pca_artifact is None
 # ---------------------------------------------------------------------------
 
