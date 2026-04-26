@@ -26,14 +26,14 @@
 
 This section gives an overview of the current feature being developed. See the linked issue for full requirements and implementation decisions.
 
-**Current feature: Deepen the ingest module (`Ingestor` class)** — #42
+**Current feature: Deepen the SSE streaming state machine (`querySession/` package)** — #47
 
 | # | Slice | Issue | Status |
 |---|---|---|---|
-| 1 | Introduce `Ingestor.run()` and migrate `scripts/ingest.py` | #43 | ✅ Done |
-| 2 | Add `Ingestor.exposures()` and collapse API lifespan duplication | #44 | ✅ Done |
-| 3 | Prune redundant ingest unit tests; add chunker/retriever round-trip test | #45 | ✅ Done |
-| 4 | Privatize ingest internals (`_loader`, `_joiner`, `_chunker`, `_indexer`) | #46 | ✅ Done |
+| 1 | Land `querySession/` package and migrate HomePage end-to-end | #48 | ⏳ Todo |
+| 2 | Migrate EmbeddingsPage to `useQuerySession`; trim EmbeddingsPage tests | #49 | ⏳ Todo |
+
+**Previous feature: Deepen the ingest module (`Ingestor` class)** — #42 (✅ Complete: #43, #44, #45, #46)
 
 ## Agent docs (load as needed)
 
