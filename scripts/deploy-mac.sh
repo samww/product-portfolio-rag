@@ -17,7 +17,7 @@ echo "Resource group : $RESOURCE_GROUP"
 echo "ACR            : $ACR_SERVER"
 echo "ContainerApp   : $APP_NAME"
 
-# ── 1. Resource group + ACR ──────────────────────────────────────────────────
+# -- 1. Resource group + ACR --------------------------------------------------
 az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
 
 az acr create \
@@ -27,7 +27,7 @@ az acr create \
     --admin-enabled true \
     --output none
 
-# ── 2. Build image in ACR (cloud build — no local Docker needed) ─────────────
+# -- 2. Build image in ACR (cloud build -- no local Docker needed) -------------
 TAG="$(date -u '+%Y%m%d%H%M%S')"
 IMAGE="${ACR_SERVER}/${APP_NAME}:${TAG}"
 
@@ -36,13 +36,14 @@ az acr build \
     --registry "$ACR_NAME" \
     --resource-group "$RESOURCE_GROUP" \
     --image "${APP_NAME}:${TAG}" \
+    --build-arg "OPENAI_API_KEY=${OPENAI_API_KEY}" \
     "$REPO_ROOT"
 
-# ── 3. Get ACR admin credentials ─────────────────────────────────────────────
+# -- 3. Get ACR admin credentials ---------------------------------------------
 ACR_USER="$(az acr credential show --name "$ACR_NAME" --query username -o tsv)"
 ACR_PASS="$(az acr credential show --name "$ACR_NAME" --query 'passwords[0].value' -o tsv)"
 
-# ── 4. Ensure Container App Environment exists ────────────────────────────────
+# -- 4. Ensure Container App Environment exists --------------------------------
 ENV_COUNT="$(az containerapp env list --resource-group "$RESOURCE_GROUP" \
     --query "[?name=='${ENV_NAME}'] | length(@)" -o tsv)"
 if [ "$ENV_COUNT" -eq 0 ]; then
@@ -54,7 +55,7 @@ if [ "$ENV_COUNT" -eq 0 ]; then
         --output none
 fi
 
-# ── 5. Create or update ContainerApp ─────────────────────────────────────────
+# -- 5. Create or update ContainerApp -----------------------------------------
 APP_COUNT="$(az containerapp list --resource-group "$RESOURCE_GROUP" \
     --query "[?name=='${APP_NAME}'] | length(@)" -o tsv)"
 if [ "$APP_COUNT" -gt 0 ]; then
@@ -81,7 +82,7 @@ else
         --output none
 fi
 
-# ── 6. Secrets + env vars ─────────────────────────────────────────────────────
+# -- 6. Secrets + env vars ----------------------------------------------------
 az containerapp secret set \
     --name "$APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \

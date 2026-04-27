@@ -4,7 +4,7 @@ set -euo pipefail
 APP_NAME="${APP_NAME:-portfolio-rag}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-portfolio-rag}"
 
-# ── 1. Resolve tenant and app FQDN ───────────────────────────────────────────
+# -- 1. Resolve tenant and app FQDN -------------------------------------------
 TENANT_ID="$(az account show --query tenantId -o tsv)"
 FQDN="$(az containerapp show \
     --name "$APP_NAME" \
@@ -15,7 +15,7 @@ APP_URL="https://$FQDN"
 echo "Tenant   : $TENANT_ID"
 echo "App URL  : $APP_URL"
 
-# ── 2. Create or reuse Entra app registration ────────────────────────────────
+# -- 2. Create or reuse Entra app registration --------------------------------
 REG_NAME="${APP_NAME}-auth"
 REPLY_URI="${APP_URL}/.auth/login/aad/callback"
 
@@ -23,7 +23,12 @@ EXISTING_ID="$(az ad app list --display-name "$REG_NAME" --query '[0].appId' -o 
 if [ -n "$EXISTING_ID" ]; then
     CLIENT_ID="$EXISTING_ID"
     echo "Reusing existing app registration '$REG_NAME' (appId: $CLIENT_ID)"
-    CLIENT_SECRET=""
+
+    # Always reset and capture a fresh secret
+    CLIENT_SECRET="$(az ad app credential reset --id "$CLIENT_ID" --query password -o tsv)"
+
+    # Always update redirect URIs to include the current ReplyUri
+    az ad app update --id "$CLIENT_ID" --web-redirect-uris "$REPLY_URI"
 else
     echo "Creating app registration '$REG_NAME' ..."
     CLIENT_ID="$(az ad app create \
@@ -32,22 +37,22 @@ else
         --web-redirect-uris "$REPLY_URI" \
         --query appId -o tsv)"
 
-    # Enable ID tokens — required for Easy Auth browser redirect flow
+    # Enable ID tokens - required for Easy Auth browser redirect flow
     az ad app update --id "$CLIENT_ID" --enable-id-token-issuance true
 
-    # ── 3. Create a client secret (new registration only) ─────────────────────
+    # -- 3. Create a client secret (new registration only) --------------------
     CLIENT_SECRET="$(az ad app credential reset --id "$CLIENT_ID" --query password -o tsv)"
 fi
 
 echo "App registration client ID: $CLIENT_ID"
 
 if [ -z "$CLIENT_SECRET" ]; then
-    echo "WARNING: Reusing existing registration — client secret not rotated."
+    echo "WARNING: Reusing existing registration - client secret not rotated."
     echo "To rotate, run: az ad app credential reset --id $CLIENT_ID"
     exit 0
 fi
 
-# ── 4. Wire the Microsoft provider into Container Apps Easy Auth ──────────────
+# -- 4. Wire the Microsoft provider into Container Apps Easy Auth --------------
 az containerapp auth microsoft update \
     --name "$APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
@@ -56,7 +61,7 @@ az containerapp auth microsoft update \
     --issuer "https://login.microsoftonline.com/${TENANT_ID}/v2.0" \
     --yes
 
-# ── 5. Enable authentication, redirect unauthenticated requests ───────────────
+# -- 5. Enable authentication, redirect unauthenticated requests ---------------
 az containerapp auth update \
     --name "$APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
