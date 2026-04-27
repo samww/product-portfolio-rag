@@ -95,6 +95,7 @@ uv run uvicorn src.api.main:app --reload
 # 5. Start the frontend (separate terminal)
 cd src/frontend
 npm install
+npm run build
 npm run dev
 ```
 
