@@ -40,7 +40,7 @@ query → embed via text-embedding-3-small
 | `_joiner.py` | Enriches each product with computed fields (costs, ROI, risk, EOL, revenue at risk — see data-model.md). Also exports `compute_app_arr_at_risk` and `compute_app_product_exposures`. |
 | `_chunker.py` | Formats each record as a labelled text block. First-line prefixes `"Application: "` / `"Product: "` are parsed by `retriever.parse_doc_source`. |
 | `_indexer.py` | Embeds all 44 docs, upserts into `"portfolio"` collection with metadata, calls `pca.fit()`, returns `PcaArtifact`. |
-| `pca.py` | `PcaArtifact`: `fit()` SVD → writes `.chroma/pca.npz` + `src/frontend/public/points.json`; `project()` applies stored components. |
+| `pca.py` | `PcaArtifact`: `fit()` SVD → writes `.chroma/pca.npz` + `points.json` (path set by `--points-path`; production target is `src/api/static/points.json`); `project()` applies stored components. |
 | `ingestor.py` | `Ingestor` orchestrates load→enrich→chunk→index→PCA. `run(reset=False)` is a no-op if already populated. `exposures()` returns per-app exposures dict. Only public exports from `src/ingest/`. |
 
 Entry point: `scripts/ingest.py` — ≤20 lines; constructs `chromadb.PersistentClient`, an `embed` callable, and delegates everything to `Ingestor(collection, embed).run(reset=args.reset)`.

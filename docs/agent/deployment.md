@@ -24,16 +24,20 @@ FROM node:22-slim AS frontend-build
 
 `mcr.microsoft.com/mirror/docker/library/node` only carries tags up to Node 20 -- `node:22-slim` fails with `manifest unknown`. `az acr build` pulls from Docker Hub directly without rate-limit issues at personal deploy cadence.
 
+## Ingestion is build-time only
+
+All three ingestion artifacts (ChromaDB collection, `.chroma/pca.npz`, `src/api/static/points.json`) are baked into the Docker image at build time. The runtime entrypoint (`scripts/start.sh`) is a single `exec uvicorn` line — it does not call `ingest.py` or make any OpenAI embedding calls on startup. `OPENAI_API_KEY` must be available at image build time (passed as `--build-arg`) so the Dockerfile's `RUN uv run python scripts/ingest.py` step can call the embedding API.
+
 ## Deploy script
 
 `scripts/deploy.ps1` / `scripts/deploy-mac.sh` -- idempotent, re-runnable. Steps:
 
 1. Create resource group + ACR (Basic SKU, admin enabled)
-2. Build image in ACR with a timestamp tag (`yyyyMMddHHmmss`), passing `OPENAI_API_KEY` as a build arg
+2. Build image in ACR with a timestamp tag (`yyyyMMddHHmmss`), passing `OPENAI_API_KEY` as a build arg (required for build-time ingestion)
 3. Retrieve ACR admin credentials
 4. Create Container App Environment if it does not already exist
 5. Create or update Azure Container App (target port 8000, external ingress, 0-3 replicas)
-6. Set `OPENAI_API_KEY` as a secret and wire it as an env var via `secretref`
+6. Set `OPENAI_API_KEY` as a secret and wire it as an env var via `secretref` (required at runtime for LLM generation calls)
 
 Required env var: `OPENAI_API_KEY`. Optional overrides: `APP_NAME`, `RESOURCE_GROUP`, `LOCATION`.
 

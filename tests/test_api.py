@@ -471,3 +471,109 @@ def test_stream_done_includes_all_retrieved_sources(chroma_collection, stub_embe
     payload = json.loads(done_line[len("data: [DONE] "):])
     assert "AuthService" in payload["app_sources"]
     assert "PaymentGateway" in payload["app_sources"]
+
+
+# ---------------------------------------------------------------------------
+# Cycle 21: production artifacts → /health non-zero count, /embeddings/project 200
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def production_collection():
+    """Real ChromaDB collection from the baked-in .chroma artifact."""
+    import chromadb as _chromadb
+    chroma_path = ".chroma"
+    client = _chromadb.PersistentClient(path=chroma_path)
+    try:
+        return client.get_collection("portfolio")
+    except Exception:
+        pytest.skip(".chroma/portfolio collection not found — run ingestion first")
+
+
+@pytest.fixture
+def production_pca():
+    """Real PcaArtifact loaded from .chroma/pca.npz."""
+    import numpy as np
+    from src.ingest.pca import PcaArtifact
+    pca_path = ".chroma/pca.npz"
+    try:
+        data = np.load(pca_path)
+        return PcaArtifact(mean=data["mean"], components=data["components"])
+    except Exception:
+        pytest.skip(".chroma/pca.npz not found — run ingestion first")
+
+
+def test_health_document_count_nonzero_with_production_artifacts(production_collection):
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = production_collection
+    test_app.state.embed = MagicMock(return_value=[[0.0] * 1536])
+    test_app.state.openai_client = _stub_openai()
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["document_count"] > 0, (
+        "Production collection is empty — ingestion artefacts not baked into image"
+    )
+
+
+def test_embeddings_project_200_with_production_artifacts(production_collection, production_pca):
+    def _real_dim_embed(texts):
+        return [[0.0] * production_pca.components.shape[1]] * len(texts)
+
+    test_app = FastAPI()
+    test_app.include_router(router)
+    test_app.state.collection = production_collection
+    test_app.state.embed = _real_dim_embed
+    test_app.state.pca_artifact = production_pca
+    with TestClient(test_app, raise_server_exceptions=True) as c:
+        response = c.post("/embeddings/project", json={"query": "revenue at risk"})
+    assert response.status_code == 200, (
+        f"Expected 200 but got {response.status_code}: {response.text}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cycle 22: DataLicensing document present in baked-in corpus
+# ---------------------------------------------------------------------------
+
+def test_datalicensing_document_in_production_corpus(production_collection):
+    results = production_collection.get(ids=["product-datalicensing"])
+    assert results["documents"], (
+        "product-datalicensing not found in corpus — ingestion artefacts may be stale or missing"
+    )
+    doc = results["documents"][0]
+    assert doc.splitlines()[0] == "Product: DataLicensing", (
+        f"First line of DataLicensing doc is '{doc.splitlines()[0]}', expected 'Product: DataLicensing'"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cycle 20: lifespan makes zero OpenAI embedding calls at startup
+# ---------------------------------------------------------------------------
+
+def test_lifespan_makes_no_embedding_calls_at_startup(monkeypatch):
+    import os
+    from unittest.mock import MagicMock, patch
+    from fastapi.testclient import TestClient
+    from src.api.main import app, lifespan
+
+    mock_openai_instance = MagicMock()
+    mock_openai_cls = MagicMock(return_value=mock_openai_instance)
+    mock_chroma = MagicMock()
+    mock_collection = MagicMock()
+    mock_collection.count.return_value = 44
+    mock_chroma.get_or_create_collection.return_value = mock_collection
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    with patch("src.api.main.OpenAI", mock_openai_cls), \
+         patch("src.api.main.chromadb.PersistentClient", return_value=mock_chroma), \
+         patch("src.api.main.load_dotenv"), \
+         patch("src.api.main.np.load", return_value={"mean": [0.0], "components": [[1.0]]}):
+        test_app = app.__class__(lifespan=lifespan)
+        with TestClient(test_app):
+            pass
+
+    assert mock_openai_instance.embeddings.create.call_count == 0, (
+        "lifespan called OpenAI embeddings.create — ingestion must not run at startup"
+    )

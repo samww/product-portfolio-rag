@@ -15,7 +15,7 @@
 
 - Run backend tests: `uv run pytest`
 - Start API: `uv run uvicorn src.api.main:app --reload`
-- Re-ingest data: `uv run python scripts/ingest.py --reset`
+- Re-ingest data: `uv run python scripts/ingest.py --reset --points-path src/api/static/points.json`
 All frontend commands must run from `src/frontend/`, not repo root:
 - Frontend tests: `cd src/frontend && npx vitest run`
 - Frontend dev server: `cd src/frontend && npm run dev`
