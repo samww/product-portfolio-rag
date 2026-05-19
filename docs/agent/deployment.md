@@ -58,6 +58,19 @@ Both should print `OK`. If you add a new build-time step that needs `OPENAI_API_
 
 Required env var: `OPENAI_API_KEY`. Optional overrides: `APP_NAME`, `RESOURCE_GROUP`, `LOCATION`.
 
+## Rotating `OPENAI_API_KEY`
+
+The key lives in two places: the build-time `--build-arg` (used by `scripts/ingest.py` in the `ingest` stage) and the Container App `openai-api-key` secret (consumed at runtime via `secretref`). Both are set from `$env:OPENAI_API_KEY` by `scripts/deploy.ps1` on each run.
+
+Procedure:
+
+1. Create the new key in the OpenAI dashboard. Do not revoke the old one yet.
+2. `$env:OPENAI_API_KEY = "<new key>"; .\scripts\deploy.ps1` — rebuilds the image with a fresh timestamp tag and updates the runtime secret.
+3. Verify the runtime secret matches: `az containerapp secret show --name <app> --resource-group <rg> --secret-name openai-api-key --query value -o tsv`.
+4. Run one query end-to-end through the deployed app to confirm the new key authenticates against OpenAI.
+5. Only then revoke the old key in the OpenAI dashboard.
+6. Optional: `az acr repository delete --name <acr> --image <app>:<old-tag> --yes` for any image tags built before the multi-stage Dockerfile landed (commit ea33943). Older tags have the key in `ingest`-stage layer metadata; once the key is revoked they are inert.
+
 ## Auth script
 
 `scripts/setup_auth.ps1` / `scripts/setup_auth-mac.sh` -- configures Azure AD Easy Auth on an already-deployed Container App. Steps:
