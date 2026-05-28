@@ -83,3 +83,25 @@ Procedure:
 4. Enable authentication and redirect unauthenticated requests to the login page
 
 Required: the Container App must already be deployed. Optional overrides: `APP_NAME`, `RESOURCE_GROUP`.
+
+## Demo auth toggle
+
+Two `workflow_dispatch` GitHub Actions workflows that flip Easy Auth between open (demo) and locked (normal) without local tooling. Triggered from the GitHub mobile app during live demos.
+
+- `.github/workflows/demo-auth-off.yml` -- sets `unauthenticatedClientAction` to `AllowAnonymous`
+- `.github/workflows/demo-auth-on.yml` -- restores `unauthenticatedClientAction` to `RedirectToLoginPage`
+
+Both workflows keep `--enabled true` so the Microsoft provider config is never torn down. Re-locking is instant.
+
+**One-time setup:** `scripts/setup_demo_auth_toggle.ps1` (Windows only, no `-mac.sh` variant). Creates:
+- Entra app registration `<APP_NAME>-demo-auth-toggle` and its service principal
+- Custom role with `Microsoft.App/containerApps/read`, `authConfigs/read`, `authConfigs/write` -- scoped to the Container App resource ID only
+- OIDC federated credential for `repo:samww/product-portfolio-rag:ref:refs/heads/main`
+
+Prints `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` values and ready-to-run `gh secret set` commands. Idempotent -- safe to re-run.
+
+**Constraints for agents:**
+- Do not touch `scripts/setup_auth.ps1` or either `-mac.sh` variant when working on the toggle -- they are independent.
+- The federated credential subject is pinned to `refs/heads/main`. Workflows must be triggered from `main` or OIDC login will fail.
+- `az role definition update` requires ARM field names (`roleName`, `permissions[].actions`) not the simplified create format (`Name`, `Actions`). The setup script handles this correctly -- do not normalise the two branches to the same format.
+- `azure/login` is currently pinned to `v3` (Node.js 24). Do not downgrade to `v2`.
