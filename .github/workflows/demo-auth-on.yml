@@ -1,0 +1,51 @@
+name: Demo - enable auth
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: demo-auth-toggle
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  APP_NAME: portfolio-rag
+  RESOURCE_GROUP: rg-portfolio-rag
+
+jobs:
+  enable-auth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set unauthenticated client action to RedirectToLoginPage
+        run: |
+          az containerapp auth update `
+            --name $env:APP_NAME `
+            --resource-group $env:RESOURCE_GROUP `
+            --enabled true `
+            --unauthenticated-client-action RedirectToLoginPage
+
+      - name: Verify unauthenticated client action
+        run: |
+          $actual = az containerapp auth show `
+            --name $env:APP_NAME `
+            --resource-group $env:RESOURCE_GROUP `
+            --query "globalValidation.unauthenticatedClientAction" `
+            -o tsv
+          if ($actual.Trim() -ne "RedirectToLoginPage") {
+            Write-Error "Expected RedirectToLoginPage but got: $actual"
+            exit 1
+          }
+          Write-Host "Verified: unauthenticatedClientAction = $actual"

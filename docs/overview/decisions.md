@@ -115,3 +115,26 @@ Two approaches for populating `product_exposures` in the summary:
 **Trade-offs accepted:**
 - The boundary between what the LLM produced and what was deterministically computed is not visible in the API response. A code reviewer inspecting only the `SummaryReport` schema would not see it without reading `src/rag/summary/service.py` and `src/rag/generator.py`.
 - This is a hybrid pipeline, not pure RAG generation. The LLM genuinely synthesises risk findings, executive summary, governance gaps, and health rating from retrieved documents. `product_exposures` is a post-hoc join, not LLM output.
+
+---
+
+## ADR 6: Demo auth toggle via GitHub Actions (OIDC + custom role + two workflows)
+
+**Status:** Accepted
+
+**Context:**
+During live demos, attendees need to access the deployed Container App URL without an Entra sign-in. The maintainer needs a way to temporarily open anonymous access and restore it afterwards, triggerable from a mobile device with minimal steps.
+
+**Decision:** Two `workflow_dispatch` GitHub Actions workflows (`.github/workflows/demo-auth-off.yml` and `demo-auth-on.yml`) that flip Easy Auth's `unauthenticatedClientAction` between `AllowAnonymous` and `RedirectToLoginPage`. A one-time setup script (`scripts/setup_demo_auth_toggle.ps1`) creates the OIDC service principal, a least-privilege custom role, and the federated credential.
+
+**Rationale for each choice over the rejected alternatives:**
+
+- **GitHub Actions over a local script:** A local script requires the maintainer to have az CLI, credentials, and a laptop during a live demo. Two distinct workflow buttons in the GitHub mobile app require about five taps each — no local tooling.
+- **OIDC over a client secret:** OIDC federated credentials are secretless — no credential expiry, no rotation ceremony, no secret stored anywhere. A client secret would need to be stored as a GitHub secret and rotated periodically.
+- **Custom role over Contributor:** The custom role grants only `Microsoft.App/containerApps/read`, `Microsoft.App/containerApps/authConfigs/read`, and `Microsoft.App/containerApps/authConfigs/write`, scoped to the single Container App resource. Contributor would grant broad write access across the resource group, violating least-privilege.
+- **`AllowAnonymous` over `--enabled false`:** Disabling Easy Auth entirely (`--enabled false`) drops the Microsoft provider configuration, making re-locking slower and riskier (requires re-running `setup_auth.ps1`). `AllowAnonymous` keeps the provider intact and makes re-locking instant — a single `az containerapp auth update` call.
+- **Two workflows over one with a choice input:** On the GitHub mobile app, two distinct named buttons ("Demo - disable auth" and "Demo - enable auth") require fewer taps than selecting a workflow and then picking an input value from a dropdown.
+
+**Trade-offs accepted:**
+- The workflows must be triggered from `main` (the federated credential subject is pinned to `refs/heads/main`). Running from another branch will fail authentication.
+- A brief window exists between the `auth update` call and the verify step where the state is transitioning — not a concern for demo use.

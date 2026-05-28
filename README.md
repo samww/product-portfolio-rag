@@ -184,6 +184,25 @@ bash scripts/setup_auth-mac.sh
 
 `deploy` is idempotent — re-running it on an existing deployment updates the running app with a fresh image. Default app name is `portfolio-rag` in resource group `rg-portfolio-rag` (UK South); override with `APP_NAME`, `RESOURCE_GROUP`, `LOCATION` (env vars on both platforms).
 
+### Demo auth toggle
+
+Two `workflow_dispatch` workflows let the maintainer flip Easy Auth between open (demo) and locked (normal) from the GitHub mobile app — no local tooling required.
+
+| Workflow | File | Effect |
+|---|---|---|
+| Demo - disable auth | `.github/workflows/demo-auth-off.yml` | Sets `unauthenticatedClientAction` to `AllowAnonymous` — anyone can access the URL without an Entra sign-in. The Microsoft provider config is preserved; re-locking is instant. |
+| Demo - enable auth | `.github/workflows/demo-auth-on.yml` | Restores `unauthenticatedClientAction` to `RedirectToLoginPage`. |
+
+"Off" means `AllowAnonymous` (anonymous access allowed, provider still configured), not a full auth disable — `--enabled true` is kept throughout so the provider is never torn down.
+
+**One-time setup** (creates the OIDC service principal, custom role, and federated credential):
+
+```powershell
+.\scripts\setup_demo_auth_toggle.ps1
+```
+
+Then add the three printed values as GitHub repository secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. The script prints ready-to-run `gh secret set` commands. The setup script is idempotent — safe to re-run.
+
 ## Docs
 
 | Path | Contents |
