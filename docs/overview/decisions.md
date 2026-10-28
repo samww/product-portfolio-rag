@@ -162,3 +162,30 @@ GPT-4o was the generation model for all three LLM calls (free-text query, stream
 - `/summarise` is slower (~6s vs ~3.5s on GPT-4o in A/B) and no longer pinned to `temperature=0`.
 - Terra's answers are more thorough — they trace multiple dependency paths and explicitly flag when retrieved context does not account for a stated total — at the cost of slightly longer streamed responses.
 - If quality regresses, escalate in order: raise summary effort to `medium` or add `verbosity="low"` to chat → adjust `src/rag/prompts.py` → revert to GPT-4o.
+
+---
+
+## ADR 8: Semantic top-k retained for chat despite incomplete aggregate answers
+
+**Status:** Accepted
+
+**Context:**
+Chat (`POST /query`, `GET /query/stream`) retrieves the top 8 applications and top 8 products by semantic similarity. That suits explanatory questions ("what is DataLicensing's dependency chain?") but not aggregate ones that need every record ("which…", "highest…", "list all…"). Records outside the top-k never reach the model, and `SYSTEM_PROMPT` correctly forbids outside knowledge, so the answer is a confident, correctly-computed result over the wrong subset.
+
+Three of the eight suggested-query chips show this, identically on GPT-4o and GPT-6.1 Terra:
+
+| Chip | Returned | Ground truth adds |
+|---|---|---|
+| Critical or High risk rating | AuthService, CallCentre Suite | ForecastTool (High) |
+| Highest ROI | RetailInsights 1.59, TechnologyAdoption 1.42, BrandTracking Platform 1.36 | DataLicensing 2.90, MediaMeasurement 1.89, ConsumerPanel 1.77 lead |
+| Overlapping capabilities | SegmentBuilder/PanelIQ, InsightHub/ClientPortal | ForecastTool/WorkforceModel |
+
+Related: "total ARR at risk from AuthService" lists 8 products ($25.1m) against a stated $43.8m, because all 14 products are affected.
+
+**Decision:** Keep semantic top-k for chat. The gap is deliberate: it is a live, reproducible demonstration of a core limitation of naive RAG, used as a talking point when presenting the project. The suggested-query chips that expose it stay unchanged.
+
+**Fix, if the limitation is ever to be removed:** send the full corpus to generation. All 44 documents total ~28k characters (~7k tokens), roughly $0.007 per query on Terra versus ~$0.0025 today, and every product document already carries its computed ROI and revenue at risk. Query routing (classify aggregate intent → metadata filter, as `/summarise` does via `retrieve_at_risk_docs`) or structured tool calls only become worthwhile at corpus sizes that no longer fit in context. With full context, the source chips would need rethinking: "retrieved but not cited" stops meaning anything when everything is retrieved.
+
+**Trade-offs accepted:**
+- Unattended viewers of the deployed demo see incomplete answers to suggested queries without the accompanying explanation.
+- `/summarise` is unaffected — it already uses a metadata filter rather than semantic search.

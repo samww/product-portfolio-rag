@@ -23,6 +23,8 @@ query → embed via text-embedding-3-small
       → streamed token deltas (SSE) or full JSON
 ```
 
+Top-k makes aggregate questions ("which apps…", "highest ROI…") incomplete. This is deliberate, kept as a demo of a RAG limitation — do not change retrieval or `top_k` unless asked. See ADR 8.
+
 **Risk summary (`POST /summarise`, no body):**
 ```
 → ChromaDB metadata filter: High/Critical risk OR empty owner (no semantic search)
