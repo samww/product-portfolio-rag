@@ -10,7 +10,7 @@
 
 - Do not commit or push until the user explicitly asks.
 - All slices require human verification before committing. Once TDD cycles are complete, stop and wait for the user to verify before committing, pushing, or closing the issue.
-- CI (`.github/workflows/ci.yml`) runs on every PR and push to `main`: `uv run pytest`, plus frontend `npm run lint`, `npx vitest run` and `npm run build`. Keep lint at zero errors — it fails the build.
+- CI (`.github/workflows/ci.yml`) runs on every PR and push to `main`: `uv run pytest`, plus frontend `npm run lint`, `npx vitest run` and `npm run build`. Keep lint at zero errors — it fails the build. CI has no `OPENAI_API_KEY` and never runs ingestion, so the backend job builds the frontend first (API tests serve `src/api/static`) and tests needing `.chroma/` or `points.json` must `pytest.skip` when those are missing.
 - Dependabot (`.github/dependabot.yml`) groups minor/patch and security updates into one weekly PR per ecosystem (uv, npm, GitHub Actions); major bumps arrive individually.
 
 ## Commands
