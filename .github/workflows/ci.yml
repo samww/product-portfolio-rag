@@ -18,6 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # API tests serve the built frontend from src/api/static (Vite outDir)
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: src/frontend
+        run: |
+          npm ci
+          npm run build
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
