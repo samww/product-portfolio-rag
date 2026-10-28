@@ -6,20 +6,22 @@ const CHIP_QUERY = 'Which applications have no named owner?'
 
 function mockEventSource() {
   const urls: string[] = []
-  let instance: { onmessage: ((e: { data: string }) => void) | null; onerror: null; close: () => void } | null = null
+  const instances: FakeEventSource[] = []
 
-  function FakeEventSource(this: typeof instance & object, url: string) {
-    urls.push(url)
-    this.onmessage = null
-    this.onerror = null
-    this.close = () => {}
-    instance = this
+  class FakeEventSource {
+    onmessage: ((e: { data: string }) => void) | null = null
+    onerror = null
+    constructor(url: string) {
+      urls.push(url)
+      instances.push(this)
+    }
+    close() {}
   }
 
   vi.stubGlobal('EventSource', FakeEventSource)
   return {
     urls,
-    emit(data: string) { instance?.onmessage?.({ data }) },
+    emit(data: string) { instances.at(-1)?.onmessage?.({ data }) },
   }
 }
 

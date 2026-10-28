@@ -109,12 +109,12 @@ describe('buildIsolationFilter', () => {
   ]
 
   it('passes all points when selectedId is null', () => {
-    const filter = buildIsolationFilter(null, pts)
+    const filter = buildIsolationFilter(null)
     expect(pts.every(filter)).toBe(true)
   })
 
   it('passes only the selected point and cited points when selectedId is set', () => {
-    const filter = buildIsolationFilter('b', pts)
+    const filter = buildIsolationFilter('b')
     expect(filter(pts[0])).toBe(true)   // a — cited
     expect(filter(pts[1])).toBe(true)   // b — selected
     expect(filter(pts[2])).toBe(true)   // c — cited
@@ -125,7 +125,7 @@ describe('buildIsolationFilter', () => {
       { ...makePoint('a'), cited: false, retrieved: false },
       { ...makePoint('b'), cited: false, retrieved: false },
     ]
-    const filter = buildIsolationFilter('a', ptsNonCited)
+    const filter = buildIsolationFilter('a')
     expect(filter(ptsNonCited[0])).toBe(true)   // a — selected
     expect(filter(ptsNonCited[1])).toBe(false)  // b — not selected, not cited
   })
