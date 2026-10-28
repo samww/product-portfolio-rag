@@ -22,7 +22,7 @@ Write-Host "Resource group : $ResourceGroup"
 Write-Host "ACR            : $AcrServer"
 Write-Host "ContainerApp   : $AppName"
 
-# ── 1. Resource group + ACR ──────────────────────────────────────────────────
+# --- 1. Resource group + ACR ---
 az group create --name $ResourceGroup --location $Location --output none
 Assert-AzSuccess 'group create'
 
@@ -34,25 +34,34 @@ az acr create `
     --output none
 Assert-AzSuccess 'acr create'
 
-# ── 2. Build image in ACR (cloud build — no local Docker needed) ─────────────
+# --- 2. Build image in ACR (cloud build -- no local Docker needed) ---
 $Tag   = (Get-Date -Format 'yyyyMMddHHmmss')
 $Image = "$AcrServer/${AppName}:$Tag"
 
 Write-Host "Building image $Image ..."
-az acr build `
+# --no-logs: az crashes streaming non-ASCII build output (e.g. Vite's check mark) through a cp1252
+# console, and its bundled Python ignores PYTHONIOENCODING/PYTHONUTF8. It still waits for the run.
+$Run = az acr build `
     --registry $AcrName `
     --resource-group $ResourceGroup `
     --image "${AppName}:$Tag" `
     --build-arg "OPENAI_API_KEY=$OpenAiApiKey" `
-    $RepoRoot
+    --no-logs `
+    --query "{runId:runId, status:status}" `
+    -o json `
+    $RepoRoot | ConvertFrom-Json
 Assert-AzSuccess 'acr build'
+if ($Run.status -ne 'Succeeded') {
+    throw "acr build run $($Run.runId) finished with status $($Run.status). Logs: az acr task logs --registry $AcrName --run-id $($Run.runId)"
+}
+Write-Host "Build run $($Run.runId) succeeded"
 
-# ── 3. Get ACR admin credentials ─────────────────────────────────────────────
+# --- 3. Get ACR admin credentials ---
 $AcrCreds = az acr credential show --name $AcrName | ConvertFrom-Json
 $AcrUser  = $AcrCreds.username
 $AcrPass  = $AcrCreds.passwords[0].value
 
-# ── 4. Ensure Container App Environment exists ────────────────────────────────
+# --- 4. Ensure Container App Environment exists ---
 $EnvCount = az containerapp env list --resource-group $ResourceGroup `
     --query "[?name=='$EnvName'] | length(@)" -o tsv
 if ($EnvCount -eq 0) {
@@ -64,7 +73,7 @@ if ($EnvCount -eq 0) {
         --output none
 }
 
-# ── 5. Create or update ContainerApp ─────────────────────────────────────────
+# --- 5. Create or update ContainerApp ---
 $AppCount = az containerapp list --resource-group $ResourceGroup `
     --query "[?name=='$AppName'] | length(@)" -o tsv
 if ($AppCount -gt 0) {
@@ -91,7 +100,7 @@ if ($AppCount -gt 0) {
         --output none
 }
 
-# ── 6. Secrets + env vars ─────────────────────────────────────────────────────
+# --- 6. Secrets + env vars ---
 az containerapp secret set `
     --name $AppName `
     --resource-group $ResourceGroup `
