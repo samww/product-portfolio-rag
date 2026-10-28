@@ -195,7 +195,7 @@ def _stub_summary_openai(report: dict):
     completion = MagicMock()
     completion.choices = [choice]
     client = MagicMock()
-    client.beta.chat.completions.parse.return_value = completion
+    client.chat.completions.parse.return_value = completion
     return client
 
 

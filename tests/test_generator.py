@@ -124,7 +124,7 @@ def _stub_summary_openai(report: dict):
     completion = MagicMock()
     completion.choices = [choice]
     client = MagicMock()
-    client.beta.chat.completions.parse.return_value = completion
+    client.chat.completions.parse.return_value = completion
     return client
 
 
@@ -139,8 +139,8 @@ def test_generate_summary_uses_structured_output_parse():
     client = _stub_summary_openai(_SUMMARY_REPORT)
     docs = _make_docs("AuthService")
     generate_summary(docs, client)
-    assert client.beta.chat.completions.parse.called
-    call_kwargs = client.beta.chat.completions.parse.call_args.kwargs
+    assert client.chat.completions.parse.called
+    call_kwargs = client.chat.completions.parse.call_args.kwargs
     # generator uses a private LLM-only schema (excludes product_exposures)
     from pydantic import BaseModel
     assert issubclass(call_kwargs.get("response_format"), BaseModel)
@@ -150,19 +150,22 @@ def test_generate_summary_passes_all_docs_as_context():
     client = _stub_summary_openai(_SUMMARY_REPORT)
     docs = _make_docs("AuthService", "ForecastTool", "ContractVault")
     generate_summary(docs, client)
-    call_kwargs = client.beta.chat.completions.parse.call_args.kwargs
+    call_kwargs = client.chat.completions.parse.call_args.kwargs
     user_content = next(m["content"] for m in call_kwargs["messages"] if m["role"] == "user")
     assert "AuthService" in user_content
     assert "ForecastTool" in user_content
     assert "ContractVault" in user_content
 
 
-def test_generate_summary_passes_temperature_zero():
+def test_generate_summary_uses_terra_with_low_reasoning_and_no_temperature():
     client = _stub_summary_openai(_SUMMARY_REPORT)
     docs = _make_docs("AuthService")
     generate_summary(docs, client)
-    call_kwargs = client.beta.chat.completions.parse.call_args.kwargs
-    assert call_kwargs.get("temperature") == 0
+    call_kwargs = client.chat.completions.parse.call_args.kwargs
+    assert call_kwargs.get("model") == "gpt-6.1-terra"
+    assert call_kwargs.get("reasoning_effort") == "low"
+    # Sampling params are rejected when reasoning effort is above "none".
+    assert "temperature" not in call_kwargs
 
 
 def test_generate_answer_stream_passes_temperature_zero():
@@ -179,6 +182,22 @@ def test_generate_answer_passes_temperature_zero():
     generate_answer("any query", docs, client)
     call_kwargs = client.chat.completions.create.call_args.kwargs
     assert call_kwargs.get("temperature") == 0
+
+
+def test_generate_answer_uses_terra_without_reasoning():
+    client = _stub_openai("Some answer.")
+    generate_answer("any query", _make_docs("AuthService"), client)
+    call_kwargs = client.chat.completions.create.call_args.kwargs
+    assert call_kwargs.get("model") == "gpt-6.1-terra"
+    assert call_kwargs.get("reasoning_effort") == "none"
+
+
+def test_generate_answer_stream_uses_terra_without_reasoning():
+    client = _stub_streaming_openai(["Hello"])
+    list(generate_answer_stream("test query", _make_docs("AuthService"), client))
+    call_kwargs = client.chat.completions.create.call_args.kwargs
+    assert call_kwargs.get("model") == "gpt-6.1-terra"
+    assert call_kwargs.get("reasoning_effort") == "none"
 
 
 def test_generate_answer_uses_system_prompt():

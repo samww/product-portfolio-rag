@@ -1,4 +1,4 @@
-"""Generate a grounded answer from retrieved context using GPT-4o."""
+"""Generate a grounded answer from retrieved context using GPT-6.1 Terra."""
 
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -10,6 +10,12 @@ from pydantic import BaseModel
 from src.rag.models import GovernanceGap, SummaryReport
 from src.rag.prompts import SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT
 from src.rag.retriever import RetrievedDoc, parse_doc_source
+
+CHAT_MODEL = "gpt-6.1-terra"
+# Effort "none" is the only level that accepts temperature; chat keeps it for low latency.
+CHAT_REASONING_EFFORT = "none"
+# Summary is non-streamed and does arithmetic/prioritisation, so it trades latency for reasoning.
+SUMMARY_REASONING_EFFORT = "low"
 
 
 class _RiskFindingLLM(BaseModel):
@@ -41,7 +47,7 @@ def generate_answer(
     retrieved_docs: list[RetrievedDoc],
     openai_client: OpenAI,
 ) -> GeneratedAnswer:
-    """Call GPT-4o with retrieved context and return answer + source names."""
+    """Call GPT-6.1 Terra with retrieved context and return answer + source names."""
     context = "\n\n---\n\n".join(doc.document for doc in retrieved_docs)
     sources = [parse_doc_source(doc)[1] for doc in retrieved_docs]
 
@@ -50,8 +56,9 @@ def generate_answer(
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
     ]
     completion = openai_client.chat.completions.create(
-        model="gpt-4o",
+        model=CHAT_MODEL,
         messages=messages,
+        reasoning_effort=CHAT_REASONING_EFFORT,
         temperature=0,
     )
     answer = completion.choices[0].message.content
@@ -62,16 +69,16 @@ def generate_summary(
     retrieved_docs: list[RetrievedDoc],
     openai_client: OpenAI,
 ) -> SummaryReport:
-    """Call GPT-4o with structured output (response_format) to produce a SummaryReport."""
+    """Call GPT-6.1 Terra with structured output (response_format) to produce a SummaryReport."""
     context = "\n\n---\n\n".join(doc.document for doc in retrieved_docs)
-    completion = openai_client.beta.chat.completions.parse(
-        model="gpt-4o",
+    completion = openai_client.chat.completions.parse(
+        model=CHAT_MODEL,
         messages=[
             {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},
             {"role": "user", "content": f"Portfolio data:\n{context}"},
         ],
         response_format=_SummaryReportLLM,
-        temperature=0,
+        reasoning_effort=SUMMARY_REASONING_EFFORT,
     )
     parsed = completion.choices[0].message.parsed
     return SummaryReport(**parsed.model_dump())
@@ -82,15 +89,16 @@ def generate_answer_stream(
     retrieved_docs: list[RetrievedDoc],
     openai_client: OpenAI,
 ) -> Iterator[str]:
-    """Stream GPT-4o token deltas for the given query and retrieved context."""
+    """Stream GPT-6.1 Terra token deltas for the given query and retrieved context."""
     context = "\n\n---\n\n".join(doc.document for doc in retrieved_docs)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
     ]
     stream = openai_client.chat.completions.create(
-        model="gpt-4o",
+        model=CHAT_MODEL,
         messages=messages,
+        reasoning_effort=CHAT_REASONING_EFFORT,
         temperature=0,
         stream=True,
     )

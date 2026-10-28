@@ -138,3 +138,27 @@ During live demos, attendees need to access the deployed Container App URL witho
 **Trade-offs accepted:**
 - The workflows must be triggered from `main` (the federated credential subject is pinned to `refs/heads/main`). Running from another branch will fail authentication.
 - A brief window exists between the `auth update` call and the verify step where the state is transitioning — not a concern for demo use.
+
+---
+
+## ADR 7: GPT-6.1 Terra over GPT-4o, with per-endpoint reasoning effort
+
+**Status:** Accepted
+
+**Context:**
+GPT-4o was the generation model for all three LLM calls (free-text query, streaming query, `/summarise` structured output). The GPT-6 family is now OpenAI's recommended production line. GPT-6 models are reasoning models: `temperature`/`top_p` are only accepted when reasoning effort is `none`, and only some models offer `none`.
+
+**Decision:** Use `gpt-6.1-terra` for all generation, configured as module constants in `src/rag/generator.py`. Chat paths use `reasoning_effort="none"` and keep `temperature=0`; `/summarise` uses `reasoning_effort="low"` with no `temperature`. Stay on Chat Completions, moving `/summarise` from `beta.chat.completions.parse` to GA `chat.completions.parse`.
+
+**Rationale for each choice over the rejected alternatives:**
+
+- **Terra over Sol / Astra:** Terra supports effort `none`, so chat keeps deterministic sampling and low time-to-first-token. Sol and Astra have no `none` level, forcing reasoning latency onto every chat call; Astra also costs 4–5x GPT-4o. Terra ($1 / $5 per 1M tokens) is cheaper than GPT-4o ($2.50 / $10).
+- **Terra over Luna:** Luna is ~10x cheaper but a weaker fit for multi-hop dependency tracing and the prioritised summary — the two behaviours the demo depends on.
+- **Per-endpoint effort over a single setting:** `/summarise` is already non-streamed and does arithmetic (`total_arr_at_risk_000s`) and prioritisation across every at-risk record, so it benefits from reasoning; chat is user-facing and latency-sensitive.
+- **Chat Completions over the Responses API:** Terra supports both; no tools are used, so migrating would add diff and test churn for no feature gain. Structured outputs via `chat.completions.parse` were verified live on Terra.
+- **Module constants over an env var:** The model changes roughly yearly; an env var would touch compose, Container App config, deploy scripts and docs for no practical benefit.
+
+**Trade-offs accepted:**
+- `/summarise` is slower (~6s vs ~3.5s on GPT-4o in A/B) and no longer pinned to `temperature=0`.
+- Terra's answers are more thorough — they trace multiple dependency paths and explicitly flag when retrieved context does not account for a stated total — at the cost of slightly longer streamed responses.
+- If quality regresses, escalate in order: raise summary effort to `medium` or add `verbosity="low"` to chat → adjust `src/rag/prompts.py` → revert to GPT-4o.

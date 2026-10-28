@@ -7,7 +7,7 @@
 | Language | Python 3.12 |
 | Package manager | uv (all deps, venvs, script running — never pip) |
 | Web framework | FastAPI |
-| LLM | OpenAI GPT-4o (generation), text-embedding-3-small (embeddings) |
+| LLM | OpenAI GPT-6.1 Terra (generation), text-embedding-3-small (embeddings) |
 | Vector store | ChromaDB — persistent, local file at `.chroma/`, single collection named `"portfolio"` |
 | Document count | 44 total (30 applications + 14 products) |
 
@@ -19,14 +19,14 @@
 ```
 query → embed via text-embedding-3-small
       → ChromaDB: top-k application docs + top-k product docs, merged by distance
-      → GPT-4o with SYSTEM_PROMPT + retrieved context
+      → GPT-6.1 Terra (reasoning_effort=none, temperature=0) with SYSTEM_PROMPT + retrieved context
       → streamed token deltas (SSE) or full JSON
 ```
 
 **Risk summary (`POST /summarise`, no body):**
 ```
 → ChromaDB metadata filter: High/Critical risk OR empty owner (no semantic search)
-→ GPT-4o with SUMMARY_SYSTEM_PROMPT + filtered docs, response_format=SummaryReport
+→ GPT-6.1 Terra (reasoning_effort=low) with SUMMARY_SYSTEM_PROMPT + filtered docs, response_format=SummaryReport
 → structured JSON (no streaming — structured output requires complete response)
 ```
 
@@ -51,7 +51,7 @@ Entry point: `scripts/ingest.py` — ≤20 lines; constructs `chromadb.Persisten
 |---|---|
 | `retriever.py` | `retrieve()`: embeds query, fetches top-k apps + products, merges by distance. `retrieve_at_risk_docs()`: metadata filter for High/Critical/ownerless docs. `parse_doc_source(doc)`: returns `(kind, name)` from first line; `kind` ∈ `{"application","product",None}`. |
 | `prompts.py` | `SYSTEM_PROMPT`: cite app names, trace dependency chains, fallback phrase when context is insufficient. `SUMMARY_SYSTEM_PROMPT`: structured `SummaryReport` with prioritised findings. |
-| `generator.py` | `generate_answer()` / `generate_answer_stream()`: free-text RAG. `generate_summary()`: structured output — `product_exposures` excluded from LLM schema and injected downstream by `SummaryService`. |
+| `generator.py` | `generate_answer()` / `generate_answer_stream()`: free-text RAG. `generate_summary()`: structured output via `chat.completions.parse` — `product_exposures` excluded from LLM schema and injected downstream by `SummaryService`. Model and per-call reasoning effort are module constants (`CHAT_MODEL`, `CHAT_REASONING_EFFORT`, `SUMMARY_REASONING_EFFORT`). GPT-6 models reject `temperature` unless reasoning effort is `"none"` — only the chat paths pass it. Rationale: ADR 7. |
 
 ### Summary orchestration — `src/rag/summary/`
 

@@ -26,13 +26,13 @@ graph LR
     subgraph Query
         D["User query"] --> E["embed: text-embedding-3-small"]
         E --> F["ChromaDB: top-k apps\n+ top-k products"]
-        F --> G["GPT-4o"]
+        F --> G["GPT-6.1 Terra"]
         G --> H["SSE token stream\nor full JSON"]
     end
 
     subgraph Summarise
         I["POST /summarise"] --> J["ChromaDB metadata filter\nHigh/Critical OR ownerless"]
-        J --> K["GPT-4o structured output\n(risk findings, summary, health)"]
+        J --> K["GPT-6.1 Terra structured output\n(risk findings, summary, health)"]
         K --> M["Deterministic enrichment\nproduct_exposures injected\nfrom startup lookup"]
         M --> L["SummaryReport JSON"]
     end
@@ -54,7 +54,7 @@ Are there any capability overlaps between applications that could be consolidate
 | Layer | Technology |
 |---|---|
 | Backend | Python 3.12, FastAPI, uv |
-| LLM | OpenAI GPT-4o (generation), text-embedding-3-small (embeddings) |
+| LLM | OpenAI GPT-6.1 Terra (generation), text-embedding-3-small (embeddings) |
 | Vector store | ChromaDB — local file persistence at `.chroma/` |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS |
 | Container | Docker multi-stage build (Node 22 → Python 3.12) |
@@ -108,7 +108,7 @@ To force a full re-index at any point: `uv run python scripts/ingest.py --reset`
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | Yes | Used for both embeddings (`text-embedding-3-small`) and generation (`GPT-4o`) |
+| `OPENAI_API_KEY` | Yes | Used for both embeddings (`text-embedding-3-small`) and generation (`GPT-6.1 Terra`) |
 
 ## Running tests
 
