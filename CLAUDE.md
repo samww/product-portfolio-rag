@@ -10,6 +10,8 @@
 
 - Do not commit or push until the user explicitly asks.
 - All slices require human verification before committing. Once TDD cycles are complete, stop and wait for the user to verify before committing, pushing, or closing the issue.
+- CI (`.github/workflows/ci.yml`) runs on every PR and push to `main`: `uv run pytest`, plus frontend `npm run lint`, `npx vitest run` and `npm run build`. Keep lint at zero errors — it fails the build.
+- Dependabot (`.github/dependabot.yml`) groups minor/patch and security updates into one weekly PR per ecosystem (uv, npm, GitHub Actions); major bumps arrive individually.
 
 ## Commands
 
