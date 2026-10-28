@@ -1,0 +1,39 @@
+version: 2
+
+# One PR per ecosystem per week for minor/patch bumps, and one per ecosystem
+# for security fixes. Major bumps still arrive individually so breaking
+# changes can be reviewed on their own.
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      python:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /src/frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      frontend:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
