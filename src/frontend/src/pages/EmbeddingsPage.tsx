@@ -1,8 +1,8 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import { mergeTopKIntoPoints } from './EmbeddingsPage.utils'
-import type { EmbeddingPoint, EmbeddingPointWithTopK } from './EmbeddingsPage.utils'
+import type { EmbeddingPoint } from './EmbeddingsPage.utils'
 import { Scene, QUERY_COLOR } from './EmbeddingsScene'
 import { EmbeddingsQueryBar } from '../components/EmbeddingsQueryBar'
 import { divisionToColor } from './EmbeddingsPage.utils'
@@ -32,7 +32,6 @@ export default function EmbeddingsPage({ transport }: { transport?: SseTransport
   const { answer, cited, isStreaming, ask, reset, rawPayload } = useQuerySession(transport)
 
   const [rawPoints, setRawPoints] = useState<EmbeddingPoint[]>([])
-  const [points, setPoints] = useState<EmbeddingPointWithTopK[]>([])
   const [queryXyz, setQueryXyz] = useState<[number, number, number] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,18 +45,16 @@ export default function EmbeddingsPage({ transport }: { transport?: SseTransport
       .catch(() => { setError('Failed to load embedding data.'); setLoading(false) })
   }, [])
 
-  useEffect(() => {
-    if (!q) {
-      setPoints(mergeTopKIntoPoints(rawPoints, []))
-      setQueryXyz(null)
-      setRetrievedIds([])
-      reset()
-      return
-    }
-    reset()
+  const [prevQ, setPrevQ] = useState(q)
+  if (q !== prevQ) {
+    setPrevQ(q)
     setRetrievedIds([])
+    if (!q) setQueryXyz(null)
+  }
 
-    if (rawPoints.length === 0) return
+  useEffect(() => {
+    reset()
+    if (!q || rawPoints.length === 0) return
 
     fetch('/embeddings/project', {
       method: 'POST',
@@ -72,11 +69,12 @@ export default function EmbeddingsPage({ transport }: { transport?: SseTransport
       .catch(() => {})
   }, [q, rawPoints]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const citedIds = cited.map((c) => c.name)
+  const citedKey = cited.map((c) => c.name).join(',')
 
-  useEffect(() => {
-    setPoints(mergeTopKIntoPoints(rawPoints, citedIds, retrievedIds))
-  }, [rawPoints, citedIds.join(','), retrievedIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  const points = useMemo(
+    () => mergeTopKIntoPoints(rawPoints, cited.map((c) => c.name), retrievedIds),
+    [rawPoints, citedKey, retrievedIds], // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   const divisions = [...new Set(rawPoints.map((p) => p.division))].sort()
 

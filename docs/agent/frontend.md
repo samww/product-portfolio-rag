@@ -4,13 +4,13 @@ Build output: `npm run build` compiles to `src/api/static/` (consumed by FastAPI
 
 ## Routing
 
-`App.tsx` exports a `routes` array and mounts a `createBrowserRouter` + `RouterProvider`.
+`routes.tsx` exports the `routes` array; `App.tsx` mounts it with `createBrowserRouter` + `RouterProvider`. Keep non-component exports out of component files (`react-refresh/only-export-components`) — that is why `routes` and the chip `GROUPS` (`components/queryGroups.ts`) live in their own modules.
 
 ```
 Layout          ← shared wrapper: Navbar + <Outlet />
   /             → HomePage
   /summary      → SummaryPage
-  /embeddings   → EmbeddingsPage (lazy-loaded via React.lazy + Suspense)
+  /embeddings   → LazyEmbeddingsPage (React.lazy + Suspense wrapper around EmbeddingsPage)
 ```
 
 **Layout** provides the dark `bg-slate-950` shell and the persistent `Navbar`. Pages only need to render their own content div.
@@ -40,7 +40,7 @@ Risk report page. State: `summary: SummaryReportData | null`, `isSummarising`.
 
 ### EmbeddingsPage (`/embeddings`)
 
-3D embedding scatter page. State: `rawPoints`, `points`, `queryXyz`, `loading`, `error`, `retrievedIds`, `pinned`. SSE streaming state managed by `useQuerySession()` from `src/lib/querySession/`.
+3D embedding scatter page. State: `rawPoints`, `queryXyz`, `loading`, `error`, `retrievedIds`, `pinned`; `points` is derived with `useMemo` from `rawPoints`, cited names and `retrievedIds`. SSE streaming state managed by `useQuerySession()` from `src/lib/querySession/`.
 
 - On mount: fetches `/points.json` into `rawPoints`
 - URL `?q=…` is the single source of truth for the query (managed by `EmbeddingsQueryBar`)

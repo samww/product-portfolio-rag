@@ -9,11 +9,7 @@ import type { EmbeddingPoint, EmbeddingPointWithTopK } from './EmbeddingsPage.ut
 export const QUERY_COLOR = '#e879f9'
 
 function GradientBackground() {
-  const { scene } = useThree()
-  useEffect(() => {
-    scene.background = new THREE.Color('#0f172a')
-  }, [scene])
-  return null
+  return <color attach="background" args={['#0f172a']} />
 }
 
 function CameraFit({ points, orbitRef }: {

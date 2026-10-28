@@ -30,9 +30,8 @@ export function mergeTopKIntoPoints(
 }
 
 export function buildIsolationFilter(
-  selectedId: string | null,
-  _points: EmbeddingPointWithTopK[]
-): (p: EmbeddingPointWithTopK) => boolean {
+  selectedId: string | null
+):(p: EmbeddingPointWithTopK) => boolean {
   if (selectedId === null) return () => true
   return (p) => p.id === selectedId || p.cited
 }

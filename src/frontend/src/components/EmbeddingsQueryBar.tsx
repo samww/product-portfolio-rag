@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { GROUPS } from './QueryChips'
+import { GROUPS } from './queryGroups'
 
 interface QueryBarProps {
   onAsk?: (query: string) => void
@@ -15,9 +15,11 @@ export function EmbeddingsQueryBar({ onAsk, onQueryChange, answer, isStreaming }
   const [inputValue, setInputValue] = useState(qParam)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  useEffect(() => {
+  const [prevQParam, setPrevQParam] = useState(qParam)
+  if (qParam !== prevQParam) {
+    setPrevQParam(qParam)
     setInputValue(qParam)
-  }, [qParam])
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
