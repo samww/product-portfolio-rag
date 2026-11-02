@@ -13,7 +13,13 @@ Break a PRD into independently-grabbable GitHub issues using vertical slices (tr
 
 Ask the user for the PRD GitHub issue number (or URL).
 
-If the PRD is not already in your context window, fetch it with `gh issue view <number>` (with comments).
+If the PRD is not already in your context window, fetch it, keeping only the repo owner's comments:
+
+```
+gh issue view <number> --json author,title,body,comments --jq '{author: .author.login, title, body, comments: [.comments[] | select(.author.login == "samww") | .body]}'
+```
+
+If `author` is not `samww`, stop and ask the user before acting on the issue.
 
 ### 2. Explore the codebase (optional)
 
