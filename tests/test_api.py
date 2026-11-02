@@ -309,6 +309,46 @@ def test_get_assets_serves_static_files():
 
 
 # ---------------------------------------------------------------------------
+# Path traversal: spa_fallback must never serve a file from outside the static dir
+# ---------------------------------------------------------------------------
+
+def _spa_index_html() -> bytes:
+    from pathlib import Path
+    return Path("src/api/static/index.html").read_bytes()
+
+
+@pytest.mark.parametrize("target", [
+    "/..%2f..%2f..%2fpyproject.toml",
+    "/..%5c..%5c..%5cpyproject.toml",
+])
+def test_relative_traversal_cannot_read_file_outside_static_dir(target):
+    from src.api.main import app
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get(target)
+    assert b"[project]" not in response.content
+    assert response.content == _spa_index_html()
+
+
+def test_absolute_path_cannot_read_file_outside_static_dir(tmp_path):
+    from urllib.parse import quote
+    from src.api.main import app
+    canary = tmp_path / "canary.txt"
+    canary.write_bytes(b"CANARY-OUTSIDE-STATIC-DIR")
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get("/" + quote(canary.as_posix(), safe=""))
+    assert b"CANARY" not in response.content
+    assert response.content == _spa_index_html()
+
+
+def test_path_with_nul_byte_falls_back_to_spa_html():
+    from src.api.main import app
+    client = TestClient(app, raise_server_exceptions=True)
+    response = client.get("/foo%00bar")
+    assert response.status_code == 200
+    assert response.content == _spa_index_html()
+
+
+# ---------------------------------------------------------------------------
 # Cycle 19: GET /points.json returns a JSON array with required fields
 # ---------------------------------------------------------------------------
 

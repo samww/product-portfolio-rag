@@ -63,9 +63,17 @@ app = FastAPI(title="Product Portfolio RAG", lifespan=lifespan)
 app.include_router(router)
 
 
+def _static_file(path: str) -> Path | None:
+    """Return the file a URL path names inside the static dir, or None if there isn't one."""
+    try:
+        candidate = (_STATIC_DIR / path).resolve()
+    except ValueError:  # e.g. a NUL byte in the path
+        return None
+    if candidate.is_relative_to(_STATIC_DIR.resolve()) and candidate.is_file():
+        return candidate
+    return None
+
+
 @app.get("/{path:path}")
 async def spa_fallback(path: str) -> FileResponse:
-    candidate = _STATIC_DIR / path
-    if candidate.is_file():
-        return FileResponse(candidate)
-    return FileResponse(_STATIC_DIR / "index.html")
+    return FileResponse(_static_file(path) or _STATIC_DIR / "index.html")
