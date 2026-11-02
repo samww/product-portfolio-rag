@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-# OTHER
-docs/background/
-
 # Per-user Claude Code settings
 .claude/settings.local.json
 
