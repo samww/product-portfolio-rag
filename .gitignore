@@ -9,6 +9,9 @@ __pycache__/
 # OTHER
 docs/background/
 
+# Per-user Claude Code settings
+.claude/settings.local.json
+
 # Project-specific generated directories
 chroma_data/
 .chroma/
