@@ -77,7 +77,7 @@ Procedure:
 
 1. Resolve tenant ID and app FQDN from the live Container App
 2. Create or reuse an Entra app registration (`<APP_NAME>-auth`)
-   - **Existing registration**: always resets the client secret and updates the redirect URI
+   - **Existing registration**: always resets the client secret and adds the default-host redirect URI if it is missing, keeping any others (such as a custom-domain callback)
    - **New registration**: creates the app, enables ID token issuance, then creates a client secret
 3. Wire the Microsoft provider into Container Apps Easy Auth with the client ID, secret, and issuer URL
 4. Enable authentication and redirect unauthenticated requests to the login page

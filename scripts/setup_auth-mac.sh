@@ -24,11 +24,18 @@ if [ -n "$EXISTING_ID" ]; then
     CLIENT_ID="$EXISTING_ID"
     echo "Reusing existing app registration '$REG_NAME' (appId: $CLIENT_ID)"
 
+    # Add the current REPLY_URI, keeping every redirect URI already registered
+    # (e.g. a custom-domain callback): --web-redirect-uris replaces the whole list.
+    # Runs before the secret reset, so a failed read stops the script with nothing changed.
+    REDIRECT_URIS="$(az ad app show --id "$CLIENT_ID" --query "web.redirectUris" -o tsv | tr -d '\r')"
+    if ! printf '%s\n' "$REDIRECT_URIS" | grep -Fxq -- "$REPLY_URI"; then
+        set -f  # split the list into one argument per URI, without globbing
+        az ad app update --id "$CLIENT_ID" --web-redirect-uris $REDIRECT_URIS "$REPLY_URI"
+        set +f
+    fi
+
     # Always reset and capture a fresh secret
     CLIENT_SECRET="$(az ad app credential reset --id "$CLIENT_ID" --query password -o tsv)"
-
-    # Always update redirect URIs to include the current ReplyUri
-    az ad app update --id "$CLIENT_ID" --web-redirect-uris "$REPLY_URI"
 else
     echo "Creating app registration '$REG_NAME' ..."
     CLIENT_ID="$(az ad app create \

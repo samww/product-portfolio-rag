@@ -106,6 +106,16 @@ Assert-NotContains `
     "scripts/setup_auth.ps1" `
     "az ad app create"
 
+Assert-NotContains `
+    "setup_auth.ps1: does not replace redirect URIs with only the current ReplyUri" `
+    "scripts/setup_auth.ps1" `
+    "--web-redirect-uris \`$ReplyUri\s*(\r?\n|$)"
+
+Assert-NotContains `
+    "setup_auth-mac.sh: does not replace redirect URIs with only the current REPLY_URI" `
+    "scripts/setup_auth-mac.sh" `
+    "app update[^\r\n]*--web-redirect-uris `"\`$REPLY_URI`"\s*(\r?\n|$)"
+
 Write-Host ""
 Write-Host "deploy.ps1 (behavioural)"
 
